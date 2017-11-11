@@ -1,8 +1,15 @@
 package org.firstinspires.ftc.teamcode;
 
+import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.media.ImageWriter;
+import android.os.Environment;
+
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.util.ElapsedTime;
+import com.vuforia.Image;
 
 import org.firstinspires.ftc.robotcore.external.ClassFactory;
 import org.firstinspires.ftc.robotcore.external.matrices.OpenGLMatrix;
@@ -11,6 +18,11 @@ import org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackable;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackables;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.concurrent.BlockingQueue;
 
 @TeleOp(name="TeleopSaveImageTest", group="VuforiaFIREWORKS")
@@ -34,6 +46,7 @@ public class TeleopSaveImageTest extends LinearOpMode {
     OpenGLMatrix lastLocation = null;
     VuforiaLocalizer vuforia; //stores our instance of the Vuforia localization engine
     int cameraMonitorViewId;
+    File directory;
 
     @Override
     public void runOpMode(){
@@ -62,8 +75,56 @@ public class TeleopSaveImageTest extends LinearOpMode {
         // if new frames are available
         telemetry.addData("Number new frames: ", frameQueue.size()); //always 10 (max)
         telemetry.update();
-        if (frameQueue.size() > 0) {
+        while(!frameQueue.isEmpty()) {
+            try {
+                VuforiaLocalizer.CloseableFrame f = frameQueue.take();
+                long numImages = Math.min(f.getNumImages(), Integer.MAX_VALUE);
+                for (int i = 0; i < numImages; i++) {
+                    Image img = f.getImage(i);
+                    FileOutputStream out;
 
+                    int count = 1;
+                    File learningFile;
+                    while (count < Integer.MAX_VALUE) {
+                        learningFile = new File(directory.getAbsolutePath() + "/img" + count + ".jpg");
+                        if (!learningFile.exists()) {
+                            break;
+                        }
+                        count++;
+                    }
+
+                    ByteBuffer buffer = img.getPixels();
+                    byte[] bytes = new byte[buffer.capacity()];
+                    buffer.get(bytes);
+                    Bitmap bitmapImage = BitmapFactory.decodeByteArray(bytes, 0, bytes.length, null);
+
+                    try {
+                        out = new FileOutputStream(directory.getAbsolutePath() + "/img" + count + ".jpg");
+
+//                        bitmapImage.compress(Bitmap.CompressFormat.PNG, 100, out); // bmp is your Bitmap instance
+//                        // PNG is a lossless format, the compression factor (100) is ignored
+                        out.write(bytes, 0, bytes.length);
+
+                        out.flush(); // Not really required
+                        out.close(); // do not forget to close the stream
+                    }
+                    catch(FileNotFoundException fnfe) {
+                        telemetry.addData("Error", "Vuforia image saving location not found");
+                        telemetry.addData("Error", fnfe.toString());
+                        telemetry.update();
+                    }
+                    catch(IOException ioe) {
+                        telemetry.addData("Error", "Vuforia image saving cannot be done.");
+                        telemetry.addData("Error", ioe.toString());
+                        telemetry.update();
+                    }
+                    telemetry.addData("Hi", "8");
+                    telemetry.update();
+                }
+            }
+            catch (InterruptedException i) {
+                telemetry.addData("Error", "Retrieval of frame from Vuforia frame queue inturrupted.");
+            }
         }
     }
 
@@ -194,6 +255,10 @@ public class TeleopSaveImageTest extends LinearOpMode {
          */
         //tell vuforia to set aside 10 camera frames for us to analyze
         this.vuforia.setFrameQueueCapacity(VUFORIA_FRAME_QUEUE_CAPACITY);
+        directory = new File(Environment.getExternalStorageDirectory().getAbsolutePath()+"/VuforiaImages");
+        if(!directory.exists()){
+            directory.mkdir();
+        }
 
         return true;
     }
