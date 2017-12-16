@@ -48,6 +48,9 @@ public class TeleopSaveImageTest extends LinearOpMode {
     int cameraMonitorViewId;
     File directory;
 
+    Image img;
+    FileOutputStream out;
+
     @Override
     public void runOpMode(){
         doRobotInitialization();
@@ -61,7 +64,8 @@ public class TeleopSaveImageTest extends LinearOpMode {
 
         // run until the end of the match (driver presses STOP)
         while (opModeIsActive()) {
-            doImageSavingLoop();
+            if(gamepad1.x)
+                doImageSaving();
 //
             doRobotMovementLoop();
 
@@ -70,62 +74,105 @@ public class TeleopSaveImageTest extends LinearOpMode {
         }
     }
 
-    public void doImageSavingLoop() {
+    public void doImageSaving() {
         BlockingQueue<VuforiaLocalizer.CloseableFrame> frameQueue = this.vuforia.getFrameQueue();
         // if new frames are available
         telemetry.addData("Number new frames: ", frameQueue.size()); //always 10 (max)
         telemetry.update();
-        while(!frameQueue.isEmpty()) {
-            try {
-                VuforiaLocalizer.CloseableFrame f = frameQueue.take();
-                long numImages = Math.min(f.getNumImages(), Integer.MAX_VALUE);
-                for (int i = 0; i < numImages; i++) {
-                    Image img = f.getImage(i);
-                    FileOutputStream out;
-
-                    int count = 1;
-                    File learningFile;
-                    while (count < Integer.MAX_VALUE) {
-                        learningFile = new File(directory.getAbsolutePath() + "/img" + count + ".jpg");
-                        if (!learningFile.exists()) {
-                            break;
-                        }
-                        count++;
-                    }
-
-                    ByteBuffer buffer = img.getPixels();
-                    byte[] bytes = new byte[buffer.capacity()];
-                    buffer.get(bytes);
-                    Bitmap bitmapImage = BitmapFactory.decodeByteArray(bytes, 0, bytes.length, null);
-
-                    try {
-                        out = new FileOutputStream(directory.getAbsolutePath() + "/img" + count + ".jpg");
-
-//                        bitmapImage.compress(Bitmap.CompressFormat.PNG, 100, out); // bmp is your Bitmap instance
-//                        // PNG is a lossless format, the compression factor (100) is ignored
-                        out.write(bytes, 0, bytes.length);
-
-                        out.flush(); // Not really required
-                        out.close(); // do not forget to close the stream
-                    }
-                    catch(FileNotFoundException fnfe) {
-                        telemetry.addData("Error", "Vuforia image saving location not found");
-                        telemetry.addData("Error", fnfe.toString());
-                        telemetry.update();
-                    }
-                    catch(IOException ioe) {
-                        telemetry.addData("Error", "Vuforia image saving cannot be done.");
-                        telemetry.addData("Error", ioe.toString());
-                        telemetry.update();
-                    }
-                    telemetry.addData("Hi", "8");
-                    telemetry.update();
-                }
-            }
-            catch (InterruptedException i) {
-                telemetry.addData("Error", "Retrieval of frame from Vuforia frame queue inturrupted.");
-            }
+        VuforiaLocalizer.CloseableFrame f = null;
+        try {
+            f = frameQueue.take();
         }
+        catch (InterruptedException i) {
+            telemetry.addData("Error", "Retrieval of frame from Vuforia frame queue inturrupted.");
+        }
+//                long numImages = Math.min(f.getNumImages(), Integer.MAX_VALUE);
+//                for (int i = 0; i < numImages; i++) {
+        img = f.getImage(0);
+
+        int count = 1;
+        File learningFile;
+        while (count < Integer.MAX_VALUE) {
+            learningFile = new File(directory.getAbsolutePath() + "/img" + count + ".jpg");
+            if (!learningFile.exists()) {
+                telemetry.addData("Saved Image to", Integer.toString(count));
+                telemetry.update();
+                break;
+            }
+            count++;
+        }
+
+        telemetry.addData("Did", "1");
+        telemetry.update();
+        ByteBuffer buffer = img.getPixels();
+
+        telemetry.addData("Did", "2");
+        telemetry.update();
+//
+//        byte[] bytes = new byte[buffer.remaining()];
+//        buffer.get(bytes);
+//
+//
+//
+//        int temp = 0;
+//        for (byte i : bytes) {
+//            count += i;
+//        }
+
+//        telemetry.addData("Bytes in array", temp);
+//        telemetry.update();
+
+//        telemetry.addData("Did", "3");
+//        telemetry.update();
+
+//        buffer.get(bytes);
+
+//        telemetry.addData("Did", "4");
+//        telemetry.update();
+
+//        Bitmap bitmapImage = BitmapFactory.decodeByteArray(bytes, 0, bytes.length, null);
+
+//        telemetry.addData("Did", "5");
+//        telemetry.update();
+
+        try {
+//            telemetry.addData("f null?", Boolean.toString(f == null));
+//            telemetry.addData("f.getImage(0) null?", Boolean.toString(f.getImage(0) == null));
+//            telemetry.addData("1. buffer null?", Boolean.toString(buffer == null));
+//            telemetry.addData("bitmapImage null?", Boolean.toString(bitmapImage == null));
+//            out = new FileOutputStream(directory.getAbsolutePath() + "/img" + count + ".jpg");
+//            telemetry.addData("out null?", Boolean.toString(out == null));
+//            telemetry.update();
+
+//            bitmapImage.compress(Bitmap.CompressFormat.PNG, 100, out); // bmp is your Bitmap instance
+//
+////                        // PNG is a lossless format, the compression factor (100) is ignored
+//                        out.write(bytes, 0, bytes.length);
+
+            while (buffer.remaining() > 0) {
+                telemetry.addData("Buffer Value", Byte.toString(buffer.get()));
+                telemetry.update();
+                out.write((int)buffer.get());
+            }
+//            out.write();
+            out.flush(); // Not really required
+            out.close(); // do not forget to close the stream
+
+            telemetry.addData("Flushed + closed output", Boolean.toString(out == null));
+            telemetry.update();
+        }
+        catch(FileNotFoundException fnfe) {
+            telemetry.addData("Error", "Vuforia image saving location not found");
+            telemetry.addData("Error", fnfe.toString());
+            telemetry.update();
+        }
+        catch(IOException ioe) {
+            telemetry.addData("Error", "Vuforia image saving cannot be done.");
+            telemetry.addData("Error", ioe.toString());
+            telemetry.update();
+        }
+        telemetry.addData("Hi", "8");
+        telemetry.update();
     }
 
     public void doRobotMovementLoop() {

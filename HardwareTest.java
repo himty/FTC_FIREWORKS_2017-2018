@@ -9,11 +9,11 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 
 public class HardwareTest
 {
-//    /* Public OpMode members. */
-//    public DcMotor  leftMotor   = null;
-//    public DcMotor  rightMotor  = null;
-//    public DcMotor  leftMotor2 = null;
-//    public DcMotor  rightMotor2 = null;
+    /* Public OpMode members. */
+    public DcMotor  frontleftMotor   = null;
+    public DcMotor  frontrightMotor  = null;
+    public DcMotor  backleftMotor = null;
+    public DcMotor  backrightMotor = null;
     public DcMotor  linearSlide = null;
 //    public DcMotor  ballHolder  = null;
 //    public DcMotor  beaconPusher = null;
@@ -35,16 +35,16 @@ public class HardwareTest
     public void init(HardwareMap ahwMap) {
 //        // save reference to HW Map
         hwMap = ahwMap;
-//
-//        // Define and Initialize Motors
-//        leftMotor   = hwMap.dcMotor.get("left_drive");
-//        rightMotor  = hwMap.dcMotor.get("right_drive");
-//        leftMotor2  = hwMap.dcMotor.get("left_drive2");
-//        rightMotor2 = hwMap.dcMotor.get("right_drive2");
-//        leftMotor.setDirection(DcMotor.Direction.REVERSE);
-//        rightMotor.setDirection(DcMotor.Direction.FORWARD);
-//        leftMotor2.setDirection(DcMotor.Direction.REVERSE);
-//        rightMotor2.setDirection(DcMotor.Direction.FORWARD);
+
+        // Define and Initialize Motors
+        frontleftMotor   = hwMap.dcMotor.get("frontleft_drive");
+        frontrightMotor  = hwMap.dcMotor.get("frontright_drive");
+        backleftMotor  = hwMap.dcMotor.get("backleft_drive");
+        backrightMotor = hwMap.dcMotor.get("backright_drive");
+        frontleftMotor.setDirection(DcMotor.Direction.REVERSE);
+        frontrightMotor.setDirection(DcMotor.Direction.FORWARD);
+        backleftMotor.setDirection(DcMotor.Direction.REVERSE);
+        backrightMotor.setDirection(DcMotor.Direction.FORWARD);
 //
 ////        popper      = hwMap.dcMotor.get("popper");
         linearSlide = hwMap.dcMotor.get("linear_slide");

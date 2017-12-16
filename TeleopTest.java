@@ -52,26 +52,26 @@ public class TeleopTest extends LinearOpMode {
         // run until the end of the match (driver presses STOP)
         while (opModeIsActive()) {
 
-//            //drive train
-//            targetLeftPower = (gamepad1.right_stick_y - 2*gamepad1.right_stick_x);
-//            targetRightPower = (gamepad1.right_stick_y + 2 * gamepad1.right_stick_x);
-//
-//            if (targetLeftPower < 0 && targetRightPower > 0) {
-//                targetRightPower = targetRightPower * 0.5;
-//            }
-//
-//            if (gamepad1.right_bumper){
-//                targetLeftPower /= 5;
-//                targetRightPower /= 5;
-//            }
-//
-////            targetLeftPower = scaleInput(Range.clip(targetLeftPower, -1, 1));
-////            targetRightPower = scaleInput(Range.clip(targetLeftPower, -1, 1));
-//            robot.leftMotor.setPower(targetLeftPower);
-//            robot.leftMotor2.setPower(targetLeftPower);
-//            robot.rightMotor.setPower(targetRightPower);
-//            robot.rightMotor2.setPower(targetRightPower);
-//
+            //drive train
+            targetLeftPower = (gamepad1.right_stick_y - 2*gamepad1.right_stick_x);
+            targetRightPower = (gamepad1.right_stick_y + 2 * gamepad1.right_stick_x);
+
+            if (targetLeftPower < 0 && targetRightPower > 0) {
+                targetRightPower = targetRightPower * 0.5;
+            }
+
+            if (gamepad1.right_bumper){
+                targetLeftPower /= 5;
+                targetRightPower /= 5;
+            }
+
+//            targetLeftPower = scaleInput(Range.clip(targetLeftPower, -1, 1));
+//            targetRightPower = scaleInput(Range.clip(targetLeftPower, -1, 1));
+            robot.frontleftMotor.setPower(targetLeftPower);
+            robot.backleftMotor.setPower(targetLeftPower);
+            robot.frontrightMotor.setPower(targetRightPower);
+            robot.backrightMotor.setPower(targetRightPower);
+
             //linear slide
             robot.linearSlide.setPower(-1 * gamepad2.right_stick_y);
 //
