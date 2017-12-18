@@ -51,66 +51,74 @@ public class TeleopTest extends LinearOpMode {
 
         // run until the end of the match (driver presses STOP)
         while (opModeIsActive()) {
+            doDriveTrain();
+            doClampingThingy();
+            doLinearSlide();
 
-            //drive train
-            targetLeftPower = (gamepad1.right_stick_y - 2*gamepad1.right_stick_x);
-            targetRightPower = (gamepad1.right_stick_y + 2 * gamepad1.right_stick_x);
-
-            if (targetLeftPower < 0 && targetRightPower > 0) {
-                targetRightPower = targetRightPower * 0.5;
-            }
-
-            if (gamepad1.right_bumper){
-                targetLeftPower /= 5;
-                targetRightPower /= 5;
-            }
-
-//            targetLeftPower = scaleInput(Range.clip(targetLeftPower, -1, 1));
-//            targetRightPower = scaleInput(Range.clip(targetLeftPower, -1, 1));
-            robot.frontleftMotor.setPower(targetLeftPower);
-            robot.backleftMotor.setPower(targetLeftPower);
-            robot.frontrightMotor.setPower(targetRightPower);
-            robot.backrightMotor.setPower(targetRightPower);
-
-            //linear slide
-            robot.linearSlide.setPower(-1 * gamepad2.right_stick_y);
-//
-//            //ball holder movement
-//            robot.ballHolder.setPower(gamepad2.left_stick_y);
-//
-//            //beacon pusher movement
-//            if (gamepad1.dpad_up){
-//                robot.beaconPusher.setPower(0.5);
-//            } else if (gamepad1.dpad_down) {
-//                robot.beaconPusher.setPower(-0.5);
-//            } else {
-//                robot.beaconPusher.setPower(0);
-//            }
-//
-//            //popper
-////            if (gamepad2.dpad_up){
-////                robot.popper.setPower(1);
-////            } else if (gamepad2.dpad_down) {
-////                robot.popper.setPower(-1);
-////            } else {
-////                robot.popper.setPower(0);
-////            }
-////
 //            // Send telemetry message to signify robot running;
-////            telemetry.addData("Ball Dropper Position",   "%.2f", robot.ballDropper.getPosition());
-////            telemetry.addData("true/false", Double.isNaN(robot.ballDropper.getPosition()));
+//            telemetry.addData("Ball Dropper Position",   "%.2f", robot.ballDropper.getPosition());
+//            telemetry.addData("true/false", Double.isNaN(robot.ballDropper.getPosition()));
 //            telemetry.addData("left",  "%.2f", robot.leftMotor.getPower());
 //            telemetry.addData("right", "%.2f", robot.rightMotor.getPower());
 //
-////            telemetry.addData("Light", "%.2f %.2f %.2f", robot.lightSensor.getRawLightDetected(), robot.lightSensor.getLightDetected(), robot.lightSensor.getRawLightDetectedMax());
-////            telemetry.addData("Compass", "%.2f", robot.compSensor.getDirection()-INIT_COMPASS_VALUE);
+//            telemetry.addData("Light", "%.2f %.2f %.2f", robot.lightSensor.getRawLightDetected(), robot.lightSensor.getLightDetected(), robot.lightSensor.getRawLightDetectedMax());
+//            telemetry.addData("Compass", "%.2f", robot.compSensor.getDirection()-INIT_COMPASS_VALUE);
 
             telemetry.addData("hi", "hello");
+            telemetry.addData("servoleft", Double.toString(robot.clawLeft.getPosition()));
+            telemetry.addData("servoright", Double.toString(robot.clawRight.getPosition()));
             telemetry.update();
 
             // Pause for metronome tick.  40 mS each cycle = update 25 times a second.
             robot.waitForTick(40);
         }
+    }
+
+    /**
+     * Makes the robot's drive train move
+     * @return whether it was successful
+     */
+    private void doDriveTrain() {
+        //calculate motor powers
+        targetLeftPower = (gamepad1.right_stick_y - 2*gamepad1.right_stick_x);
+        targetRightPower = (gamepad1.right_stick_y + 2 * gamepad1.right_stick_x);
+
+        if (targetLeftPower < 0 && targetRightPower > 0) {
+            targetRightPower = targetRightPower * 0.5;
+        }
+
+        if (gamepad1.right_bumper){
+            targetLeftPower /= 5;
+            targetRightPower /= 5;
+        }
+
+        //set powers
+//            targetLeftPower = scaleInput(Range.clip(targetLeftPower, -1, 1));
+//            targetRightPower = scaleInput(Range.clip(targetLeftPower, -1, 1));
+        robot.frontleftMotor.setPower(targetLeftPower);
+        robot.backleftMotor.setPower(targetLeftPower);
+        robot.frontrightMotor.setPower(targetRightPower);
+        robot.backrightMotor.setPower(targetRightPower);
+    }
+
+    private void doClampingThingy() {
+        if (gamepad1.dpad_up) {
+            robot.clawLeft.setPosition(robot.clawLeft.getPosition()+0.01);
+        }
+        else if(gamepad1.dpad_down) {
+            robot.clawLeft.setPosition(robot.clawLeft.getPosition()-0.01);
+        }
+
+        if (gamepad1.y) {
+            robot.clawRight.setPosition(robot.clawRight.getPosition()+0.01);
+        }
+        else if (gamepad1.a) {
+            robot.clawRight.setPosition(robot.clawRight.getPosition()-0.01);
+        }
+    }
+
+    private void doLinearSlide() {
+        robot.linearSlide.setPower(-1 * gamepad2.right_stick_y);
     }
 
     double scaleInput(double dVal)  {
