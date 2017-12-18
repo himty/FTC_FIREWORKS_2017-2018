@@ -5,6 +5,7 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.LightSensor;
+import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 public class HardwareTest
@@ -15,6 +16,8 @@ public class HardwareTest
     public DcMotor  backleftMotor = null;
     public DcMotor  backrightMotor = null;
     public DcMotor  linearSlide = null;
+    public Servo    clawLeft = null;
+    public Servo    clawRight = null;
 //    public DcMotor  ballHolder  = null;
 //    public DcMotor  beaconPusher = null;
 ////    public DcMotor  popper      = null;
@@ -45,6 +48,11 @@ public class HardwareTest
         frontrightMotor.setDirection(DcMotor.Direction.FORWARD);
         backleftMotor.setDirection(DcMotor.Direction.REVERSE);
         backrightMotor.setDirection(DcMotor.Direction.FORWARD);
+
+        clawLeft = hwMap.servo.get("servo_left");
+        clawRight = hwMap.servo.get("servo_right");
+        clawLeft.setPosition(0);
+        clawRight.setPosition(0);
 //
 ////        popper      = hwMap.dcMotor.get("popper");
         linearSlide = hwMap.dcMotor.get("linear_slide");
