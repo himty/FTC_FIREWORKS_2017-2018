@@ -18,6 +18,14 @@ public class TeleopTest extends LinearOpMode {
 
     double INIT_COMPASS_VALUE;
 
+    double pid_errorPrior = 0;
+    double pid_integral = 0;
+    double pid_derivative;
+    ElapsedTime pid_timer = new ElapsedTime();
+    double kp = 0.5;
+    double ki = 0;
+    double kd = 0;
+
     @Override
     public void runOpMode(){
         /* Initialize the hardware variables.
@@ -40,7 +48,7 @@ public class TeleopTest extends LinearOpMode {
 //            telemetry.update();
 //        }
 //        robot.compSensor.setMode(CompassSensor.CompassMode.MEASUREMENT_MODE);
-//        INIT_COMPASS_VALUE = robot.compSensor.getDirection();
+        INIT_COMPASS_VALUE = robot.compSensor.getDirection();
 
         // Send telemetry message to signify robot waiting;
         telemetry.addData("Say", "Hello Driver");    //
@@ -50,6 +58,7 @@ public class TeleopTest extends LinearOpMode {
         waitForStart();
 
         // run until the end of the match (driver presses STOP)
+        pid_timer.reset();
         while (opModeIsActive()) {
             doDriveTrain();
             doClampingThingy();
@@ -65,8 +74,9 @@ public class TeleopTest extends LinearOpMode {
 //            telemetry.addData("Compass", "%.2f", robot.compSensor.getDirection()-INIT_COMPASS_VALUE);
 
             telemetry.addData("hi", "hello");
-            telemetry.addData("servoleft", Double.toString(robot.clawLeft.getPosition()));
-            telemetry.addData("servoright", Double.toString(robot.clawRight.getPosition()));
+            telemetry.addData("compass", robot.compSensor.getDirection());
+            telemetry.addData("servoleft", robot.clawLeft.getPosition());
+            telemetry.addData("servoright", robot.clawRight.getPosition());
             telemetry.update();
 
             // Pause for metronome tick.  40 mS each cycle = update 25 times a second.
@@ -76,7 +86,6 @@ public class TeleopTest extends LinearOpMode {
 
     /**
      * Makes the robot's drive train move
-     * @return whether it was successful
      */
     private void doDriveTrain() {
         //calculate motor powers
@@ -102,6 +111,7 @@ public class TeleopTest extends LinearOpMode {
     }
 
     private void doClampingThingy() {
+        //different behaviors for the servos because they are different types of servos
         if (gamepad1.dpad_up) {
             robot.clawLeft.setPosition(robot.clawLeft.getPosition()+0.01);
         }
@@ -110,10 +120,13 @@ public class TeleopTest extends LinearOpMode {
         }
 
         if (gamepad1.y) {
-            robot.clawRight.setPosition(robot.clawRight.getPosition()+0.01);
+            robot.clawRight.setPosition(0.75);
         }
         else if (gamepad1.a) {
-            robot.clawRight.setPosition(robot.clawRight.getPosition()-0.01);
+            robot.clawRight.setPosition(0.25);
+        }
+        else {
+            robot.clawRight.setPosition(0.5);
         }
     }
 
@@ -148,5 +161,33 @@ public class TeleopTest extends LinearOpMode {
 
         // return scaled value.
         return dScale;
+    }
+
+    /**
+     * Returns motor powers for drive train after
+     * using PID control algorithm
+     * @param desiredDirection
+     * @param errorPrev
+     * @return [motorLeft power, motorRight power]
+     */
+    double[] getPIDPowers(double desiredDirection, double errorPrev) {
+        double[] resultPowers = new double[2];
+        double relativeRobotDir = robot.compSensor.getDirection() - INIT_COMPASS_VALUE;
+        //calculate PID stuff
+        double iterationTime = pid_timer.milliseconds();
+        double error = desiredDirection - relativeRobotDir;
+        pid_integral += error * iterationTime;
+        pid_derivative = (error - pid_errorPrior) / iterationTime;
+
+        //can also add a bias to this
+        double targetDir = kp*error + ki*pid_integral + kd*pid_derivative;
+        pid_errorPrior = error;
+
+        resultPowers[0] = robot.frontrightMotor.getPower() + 0.5 * (relativeRobotDir - targetDir);
+        resultPowers[1] = robot.frontleftMotor.getPower() - 0.5 * (relativeRobotDir - targetDir);
+
+        pid_timer.reset();
+
+        return resultPowers;
     }
 }
