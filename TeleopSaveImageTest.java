@@ -9,13 +9,18 @@ import android.os.Environment;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.util.ElapsedTime;
+import com.vuforia.HINT;
 import com.vuforia.Image;
+import com.vuforia.PIXEL_FORMAT;
+import com.vuforia.Vuforia;
 
 import org.firstinspires.ftc.robotcore.external.ClassFactory;
 import org.firstinspires.ftc.robotcore.external.matrices.OpenGLMatrix;
+import org.firstinspires.ftc.robotcore.external.matrices.VectorF;
 import org.firstinspires.ftc.robotcore.external.navigation.VuMarkInstanceId;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackable;
+import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackableDefaultListener;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackables;
 
 import java.io.File;
@@ -41,12 +46,13 @@ public class TeleopSaveImageTest extends LinearOpMode {
     /*
      * Vuforia variables
      */
-    int VUFORIA_FRAME_QUEUE_CAPACITY = 10;
-    public static final String TAG = "Vuforia VuMark Sample";
     OpenGLMatrix lastLocation = null;
-    VuforiaLocalizer vuforia; //stores our instance of the Vuforia localization engine
+//    VuforiaLocalizer vuforia;
+    VuforiaLocalizerImplSubclass vuforia; //stores our instance of the Vuforia localization engine
     int cameraMonitorViewId;
     File directory;
+    VuforiaTrackables beacons;
+    int fileCount = 1;
 
     Image img;
     FileOutputStream out;
@@ -62,117 +68,20 @@ public class TeleopSaveImageTest extends LinearOpMode {
         telemetry.update();
         waitForStart();
 
+        //for vumark tracking. Idk why this is here
+//        beacons.activate();
+
         // run until the end of the match (driver presses STOP)
         while (opModeIsActive()) {
-            if(gamepad1.x)
-                doImageSaving();
-//
+            if (gamepad1.x) {
+                doVuforiaLoop();
+            }
+
             doRobotMovementLoop();
 
             // Pause for metronome tick.  40 mS each cycle = update 25 times a second.
             robot.waitForTick(40);
         }
-    }
-
-    public void doImageSaving() {
-        BlockingQueue<VuforiaLocalizer.CloseableFrame> frameQueue = this.vuforia.getFrameQueue();
-        // if new frames are available
-        telemetry.addData("Number new frames: ", frameQueue.size()); //always 10 (max)
-        telemetry.update();
-        VuforiaLocalizer.CloseableFrame f = null;
-        try {
-            f = frameQueue.take();
-        }
-        catch (InterruptedException i) {
-            telemetry.addData("Error", "Retrieval of frame from Vuforia frame queue inturrupted.");
-        }
-//                long numImages = Math.min(f.getNumImages(), Integer.MAX_VALUE);
-//                for (int i = 0; i < numImages; i++) {
-        img = f.getImage(0);
-
-        int count = 1;
-        File learningFile;
-        while (count < Integer.MAX_VALUE) {
-            learningFile = new File(directory.getAbsolutePath() + "/img" + count + ".jpg");
-            if (!learningFile.exists()) {
-                telemetry.addData("Saved Image to", Integer.toString(count));
-                telemetry.update();
-                break;
-            }
-            count++;
-        }
-
-        telemetry.addData("Did", "1");
-        telemetry.update();
-        ByteBuffer buffer = img.getPixels();
-
-        telemetry.addData("Did", "2");
-        telemetry.update();
-//
-//        byte[] bytes = new byte[buffer.remaining()];
-//        buffer.get(bytes);
-//
-//
-//
-//        int temp = 0;
-//        for (byte i : bytes) {
-//            count += i;
-//        }
-
-//        telemetry.addData("Bytes in array", temp);
-//        telemetry.update();
-
-//        telemetry.addData("Did", "3");
-//        telemetry.update();
-
-//        buffer.get(bytes);
-
-//        telemetry.addData("Did", "4");
-//        telemetry.update();
-
-//        Bitmap bitmapImage = BitmapFactory.decodeByteArray(bytes, 0, bytes.length, null);
-
-//        telemetry.addData("Did", "5");
-//        telemetry.update();
-
-        try {
-//            telemetry.addData("f null?", Boolean.toString(f == null));
-//            telemetry.addData("f.getImage(0) null?", Boolean.toString(f.getImage(0) == null));
-//            telemetry.addData("1. buffer null?", Boolean.toString(buffer == null));
-//            telemetry.addData("bitmapImage null?", Boolean.toString(bitmapImage == null));
-//            out = new FileOutputStream(directory.getAbsolutePath() + "/img" + count + ".jpg");
-//            telemetry.addData("out null?", Boolean.toString(out == null));
-//            telemetry.update();
-
-//            bitmapImage.compress(Bitmap.CompressFormat.PNG, 100, out); // bmp is your Bitmap instance
-//
-////                        // PNG is a lossless format, the compression factor (100) is ignored
-//                        out.write(bytes, 0, bytes.length);
-
-            while (buffer.remaining() > 0) {
-                telemetry.addData("Buffer Value", Byte.toString(buffer.get()));
-                telemetry.update();
-                out.write((int)buffer.get());
-            }
-//            out.write();
-            out.flush(); // Not really required
-            out.close(); // do not forget to close the stream
-
-            telemetry.addData("Flushed + closed output", Boolean.toString(out == null));
-            telemetry.update();
-        }
-        catch(FileNotFoundException fnfe) {
-            telemetry.addData("Error", "Vuforia image saving location not found");
-            telemetry.addData("Error", fnfe.toString());
-            telemetry.update();
-        }
-        catch(IOException ioe) {
-            telemetry.addData("Error", "Vuforia image saving cannot be done.");
-            telemetry.addData("Error", ioe.toString());
-            telemetry.update();
-        }
-        telemetry.addData("Hi", "8");
-        telemetry.update();
     }
 
     public void doRobotMovementLoop() {
@@ -264,50 +173,80 @@ public class TeleopSaveImageTest extends LinearOpMode {
      * @return whether initialization was successful
      */
     public boolean doVuforiaInitialization() {
-        //To start up Vuforia, tell it the view that we wish to use for camera monitor (on the RC phone);
-        //If no camera monitor is desired, use the parameterless constructor instead (commented out below).
-        cameraMonitorViewId = hardwareMap.appContext.getResources().getIdentifier("cameraMonitorViewId", "id", hardwareMap.appContext.getPackageName());
-        VuforiaLocalizer.Parameters parameters = new VuforiaLocalizer.Parameters(cameraMonitorViewId);
+        VuforiaLocalizer.Parameters params = new VuforiaLocalizer.Parameters(R.id.cameraMonitorViewId);
+        params.cameraDirection = VuforiaLocalizer.CameraDirection.BACK;
+        params.vuforiaLicenseKey = "AVf224j/////AAAAGXlS5fEZWkUuukmNJ278W4N56l4Z/TC6awPG5XTapSLGWsXBBcbc7q+C00X3DfcAs1KmILva7ZKd6OAUyTyZ4fAHK2jrLL56vjoWLOZ1+Gr1ZGya6OYBcQmnbFbUrlGLhnyWtqkIu+RwGApf+LZW18bAaBzo2KOpaZZIaD+UJJ1PqzqtM/v4KH+FXBb4LHN4iHe+q1/gabF8m8Qv+Y2i1407Dre4K/mUp2N+6959a0ZckVqcesMhWtUrljKpie664FXHjYQYPIDQwKiSJfsg12nx4s7rto4ZYmAuTWdcwGZeWHz3gb5rutPgyuG5WiApPnL66MyQNsbA8K1DoK/75pGfY1M2GRzCnzrzenNHLZVt";
+        params.cameraMonitorFeedback = VuforiaLocalizer.Parameters.CameraMonitorFeedback.AXES;
+        vuforia = new VuforiaLocalizerImplSubclass(params);
 
-        // OR...  Do Not Activate the Camera Monitor View, to save power
-//         VuforiaLocalizer.Parameters parameters = new VuforiaLocalizer.Parameters();
 
-        /*
-         * Set the license key for Vuforia so that you can use the Vuforia library
-         */
-        parameters.vuforiaLicenseKey = "AVf224j/////AAAAGXlS5fEZWkUuukmNJ278W4N56l4Z/TC6awPG5XTapSLGWsXBBcbc7q+C00X3DfcAs1KmILva7ZKd6OAUyTyZ4fAHK2jrLL56vjoWLOZ1+Gr1ZGya6OYBcQmnbFbUrlGLhnyWtqkIu+RwGApf+LZW18bAaBzo2KOpaZZIaD+UJJ1PqzqtM/v4KH+FXBb4LHN4iHe+q1/gabF8m8Qv+Y2i1407Dre4K/mUp2N+6959a0ZckVqcesMhWtUrljKpie664FXHjYQYPIDQwKiSJfsg12nx4s7rto4ZYmAuTWdcwGZeWHz3gb5rutPgyuG5WiApPnL66MyQNsbA8K1DoK/75pGfY1M2GRzCnzrzenNHLZVt";
-
-        /*
-         * We also indicate which camera on the RC that we wish to use.
-         * Here we chose the back (HiRes) camera (for greater range), but
-         * for a competition robot, the front camera might be more convenient.
-         */
-        parameters.cameraDirection = VuforiaLocalizer.CameraDirection.BACK;
-        this.vuforia = ClassFactory.createVuforiaLocalizer(parameters);
-
-        //Not necessary if we're not tracking the relic image
-//        /**
-//         * Load the data set containing the VuMarks for Relic Recovery. There's only one trackable
-//         * in this data set: all three of the VuMarks in the game were created from this one template,
-//         * but differ in their instance id information.
-//         * @see VuMarkInstanceId
-//         */
-//        VuforiaTrackables relicTrackables = this.vuforia.loadTrackablesFromAsset("RelicVuMark");
-//        VuforiaTrackable relicTemplate = relicTrackables.get(0);
-//        relicTemplate.setName("relicVuMarkTemplate"); // can help in debugging; otherwise not necessary
-//        relicTrackables.activate();
+        //for looking at the images.. why is this here
+//        Vuforia.setHint(HINT.HINT_MAX_SIMULTANEOUS_IMAGE_TARGETS,4);
+//        beacons = vuforia.loadTrackablesFromAsset("RelicVuMark");
+//        //TODO: beacons.get(0).setName("something");
+//        // etc..
 
         /*
          * Image saving stuff
          */
-        //tell vuforia to set aside 10 camera frames for us to analyze
-        this.vuforia.setFrameQueueCapacity(VUFORIA_FRAME_QUEUE_CAPACITY);
         directory = new File(Environment.getExternalStorageDirectory().getAbsolutePath()+"/VuforiaImages");
         if(!directory.exists()){
             directory.mkdir();
         }
 
         return true;
+    }
+
+    /**
+     * Saves a bitmap from the VuforiaLocalizerImplSubclass
+     */
+    public void doVuforiaLoop() {
+        if (vuforia.rgb != null) {
+            Bitmap bm = Bitmap.createBitmap(vuforia.rgb.getWidth(), vuforia.rgb.getHeight(), Bitmap.Config.RGB_565);
+            bm.copyPixelsFromBuffer(vuforia.rgb.getPixels());
+
+            File learningFile = null;
+            while (fileCount < Integer.MAX_VALUE) {
+                learningFile = new File(directory.getAbsolutePath() + "/img" + fileCount + ".jpg");
+                if (!learningFile.exists()) {
+                    telemetry.addData("Saving Image to", Integer.toString(fileCount));
+                    telemetry.update();
+                    break;
+                }
+                fileCount++;
+            }
+
+            try {
+                out = new FileOutputStream(learningFile);
+            }
+            catch (FileNotFoundException fnfe) {
+                telemetry.addData("Error", "Vuforia file not found");
+                telemetry.addData("Error", fnfe.toString());
+                telemetry.update();
+            }
+
+            try {
+               bm.compress(Bitmap.CompressFormat.PNG, 100, out);
+            }
+            catch(Exception e) {
+                telemetry.addData("Error", "Vuforia cannot save image");
+                telemetry.addData("Error", e.toString());
+                telemetry.update();
+            }
+            finally {
+                try {
+                    if (out != null) {
+                        out.close();
+                    }
+                }
+                catch (IOException e) {
+                    telemetry.addData("Error", "Vuforia cannot save image. Closed out file stream.");
+                    telemetry.addData("Error", e.toString());
+                    telemetry.update();
+                }
+            }
+        }
+        telemetry.update();
     }
 
     double scaleInput(double dVal)  {
