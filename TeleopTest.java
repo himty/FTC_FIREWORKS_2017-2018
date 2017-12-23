@@ -1,8 +1,20 @@
 package org.firstinspires.ftc.teamcode;
 
+import android.content.Context;
+import android.graphics.Bitmap;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
+
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.util.ElapsedTime;
+
+import org.firstinspires.ftc.robotcore.external.matrices.OpenGLMatrix;
+import org.firstinspires.ftc.robotcore.external.matrices.VectorF;
+import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackable;
+import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackableDefaultListener;
 
 @TeleOp(name="TeleopTest", group="FIREWORKS")
 public class TeleopTest extends LinearOpMode {
@@ -15,6 +27,11 @@ public class TeleopTest extends LinearOpMode {
 
     double targetLeftPower;
     double targetRightPower;
+
+    boolean isClamping = false;
+
+    VuforiaLocalizerImplSubclass vuforia; //stores our instance of the Vuforia localization engine
+
 
     double INIT_COMPASS_VALUE;
 
@@ -50,6 +67,8 @@ public class TeleopTest extends LinearOpMode {
 //        robot.compSensor.setMode(CompassSensor.CompassMode.MEASUREMENT_MODE);
         INIT_COMPASS_VALUE = robot.compSensor.getDirection();
 
+        robot.accelSensor = new Accelerometer(hardwareMap);
+
         // Send telemetry message to signify robot waiting;
         telemetry.addData("Say", "Hello Driver");    //
         telemetry.update();
@@ -57,11 +76,19 @@ public class TeleopTest extends LinearOpMode {
         // Wait for the game to start (driver presses PLAY)
         waitForStart();
 
-        // run until the end of the match (driver presses STOP)
         pid_timer.reset();
+
+        double count = 0;
+        double count2 = 0;
+        double tempsumx = 0;
+        double tempsumy = 0;
+        double tempsumz = 0;
+
+        // run until the end of the match (driver presses STOP)
         while (opModeIsActive()) {
             doDriveTrain();
-            doClampingThingy();
+            doClamping();
+            doVuforia();
             doLinearSlide();
 
 //            // Send telemetry message to signify robot running;
@@ -72,9 +99,21 @@ public class TeleopTest extends LinearOpMode {
 //
 //            telemetry.addData("Light", "%.2f %.2f %.2f", robot.lightSensor.getRawLightDetected(), robot.lightSensor.getLightDetected(), robot.lightSensor.getRawLightDetectedMax());
 //            telemetry.addData("Compass", "%.2f", robot.compSensor.getDirection()-INIT_COMPASS_VALUE);
+            count++;
+
+            if (count > 40 && count < 100) {
+                count2++;
+                tempsumx += robot.accelSensor.getxAccel();
+                tempsumy += robot.accelSensor.getyAccel();
+                tempsumz += robot.accelSensor.getzAccel();
+
+//                telemetry.addData("Accelerometer Avg", tempsumx/count + " " + tempsumy/count + " " + tempsumz/count);
+            }
+
+            telemetry.addData("Accelerometer Avg", tempsumx/(count2) + " " + tempsumy/(count2) + " " + tempsumz/(count2));
 
             telemetry.addData("hi", "hello");
-            telemetry.addData("compass", robot.compSensor.getDirection());
+            telemetry.addData("Accelerometer", robot.accelSensor.toString());
             telemetry.addData("servoleft", robot.clawLeft.getPosition());
             telemetry.addData("servoright", robot.clawRight.getPosition());
             telemetry.update();
@@ -110,23 +149,34 @@ public class TeleopTest extends LinearOpMode {
         robot.backrightMotor.setPower(targetRightPower);
     }
 
-    private void doClampingThingy() {
-        //different behaviors for the servos because they are different types of servos
+    private void doClamping() {
         if (gamepad1.dpad_up) {
-            robot.clawLeft.setPosition(robot.clawLeft.getPosition()+0.01);
+            //make claws clamp onto the object
+            robot.clawLeft.setPosition(0.2);
+            robot.clawRight.setPosition(0.2);
+            isClamping = true;
         }
-        else if(gamepad1.dpad_down) {
-            robot.clawLeft.setPosition(robot.clawLeft.getPosition()-0.01);
-        }
-
-        if (gamepad1.y) {
-            robot.clawRight.setPosition(0.75);
-        }
-        else if (gamepad1.a) {
-            robot.clawRight.setPosition(0.25);
+        else if (gamepad1.dpad_down) {
+            //make claws release the object
+            robot.clawLeft.setPosition(0.7);
+            robot.clawRight.setPosition(0.7);
+            isClamping = false;
         }
         else {
+            //make claws hang loose if there is nothing to do
+            robot.clawLeft.setPosition(0.5);
             robot.clawRight.setPosition(0.5);
+        }
+    }
+
+    private void doVuforia() {
+        if (vuforia.rgb != null) {
+            Bitmap bm = Bitmap.createBitmap(vuforia.rgb.getWidth(), vuforia.rgb.getHeight(), Bitmap.Config.RGB_565);
+            bm.copyPixelsFromBuffer(vuforia.rgb.getPixels());
+
+            //TODO: do something with the bitmap
+
+            //TODO: add VuMark sensing
         }
     }
 
@@ -190,4 +240,16 @@ public class TeleopTest extends LinearOpMode {
 
         return resultPowers;
     }
+
+    //random thing for future reference
+//    for (VuforiaTrackable beac : beacons) {
+//        OpenGLMatrix pose = ((VuforiaTrackableDefaultListener) beac.getListener()).getRawPose();
+//
+//        if (pose != null) {
+//            VectorF translation = pose.getTranslation();
+//            telemetry.addData(beac.getName() + " - Translation", translation);
+//            double radiansToTurn = Math.toDegrees(Math.atan2(translation.get(1), translation.get(2)));
+//            telemetry.addData(beac.getName() + " - Degrees", radiansToTurn);
+//        }
+//    }
 }
