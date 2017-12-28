@@ -47,11 +47,9 @@ public class TeleopSaveImageTest extends LinearOpMode {
      * Vuforia variables
      */
     OpenGLMatrix lastLocation = null;
-//    VuforiaLocalizer vuforia;
     VuforiaLocalizerImplSubclass vuforia; //stores our instance of the Vuforia localization engine
-    int cameraMonitorViewId;
     File directory;
-    VuforiaTrackables beacons;
+//    VuforiaTrackables beacons;
     int fileCount = 1;
 
     Image img;
@@ -59,7 +57,9 @@ public class TeleopSaveImageTest extends LinearOpMode {
 
     @Override
     public void runOpMode(){
-        doRobotInitialization();
+        //Initialize the hardware variables.
+        //The init() method of the hardware class does all the work here
+        robot.init(hardwareMap);
 
         doVuforiaInitialization();
 
@@ -140,39 +140,10 @@ public class TeleopSaveImageTest extends LinearOpMode {
     }
 
     /**
-     * Initializes the robot
-     * @return whether initialization was successful
-     */
-    public boolean doRobotInitialization() {
-        //Initialize the hardware variables.
-        //The init() method of the hardware class does all the work here
-        robot.init(hardwareMap);
-//
-//        robot.leftMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-//        robot.rightMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-//        robot.leftMotor2.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-//        robot.rightMotor2.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-//        //calibrate compass sensor
-//        robot.compSensor.setMode(CompassSensor.CompassMode.CALIBRATION_MODE);
-//        bPusherTime.reset();
-//        while (bPusherTime.seconds() < 4){
-//            ;
-//        }
-//        if (robot.compSensor.calibrationFailed()){
-//            telemetry.addData("Say", "Compass Calibration Failed");    //
-//            telemetry.update();
-//        }
-//        robot.compSensor.setMode(CompassSensor.CompassMode.MEASUREMENT_MODE);
-//        INIT_COMPASS_VALUE = robot.compSensor.getDirection();
-
-        return true;
-    }
-
-    /**
      * Initializes the Vuforia engine
      * @return whether initialization was successful
      */
-    public boolean doVuforiaInitialization() {
+    public void doVuforiaInitialization() {
         VuforiaLocalizer.Parameters params = new VuforiaLocalizer.Parameters(R.id.cameraMonitorViewId);
         params.cameraDirection = VuforiaLocalizer.CameraDirection.BACK;
         params.vuforiaLicenseKey = "AVf224j/////AAAAGXlS5fEZWkUuukmNJ278W4N56l4Z/TC6awPG5XTapSLGWsXBBcbc7q+C00X3DfcAs1KmILva7ZKd6OAUyTyZ4fAHK2jrLL56vjoWLOZ1+Gr1ZGya6OYBcQmnbFbUrlGLhnyWtqkIu+RwGApf+LZW18bAaBzo2KOpaZZIaD+UJJ1PqzqtM/v4KH+FXBb4LHN4iHe+q1/gabF8m8Qv+Y2i1407Dre4K/mUp2N+6959a0ZckVqcesMhWtUrljKpie664FXHjYQYPIDQwKiSJfsg12nx4s7rto4ZYmAuTWdcwGZeWHz3gb5rutPgyuG5WiApPnL66MyQNsbA8K1DoK/75pGfY1M2GRzCnzrzenNHLZVt";
@@ -193,12 +164,11 @@ public class TeleopSaveImageTest extends LinearOpMode {
         if(!directory.exists()){
             directory.mkdir();
         }
-
-        return true;
     }
 
     /**
-     * Saves a bitmap from the VuforiaLocalizerImplSubclass
+     * Saves a bitmap from VuforiaLocalizerImplSubclass
+     * Images are received and saved sideways :3
      */
     public void doVuforiaLoop() {
         if (vuforia.rgb != null) {
