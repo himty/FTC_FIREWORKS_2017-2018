@@ -20,6 +20,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackableDefau
 public class TeleopTest extends LinearOpMode {
     /* Declare OpMode members. */
     HardwareTest    robot               = new HardwareTest();              // Use a K9'shardware
+    ElapsedTime     robotTime           = new ElapsedTime();
     ElapsedTime     ballDropperTime     = new ElapsedTime(1000); //starting time is high so doesn't mess with timing
     ElapsedTime     bPusherTime         = new ElapsedTime(1000);
 
@@ -35,37 +36,12 @@ public class TeleopTest extends LinearOpMode {
 
     double INIT_COMPASS_VALUE;
 
-    double pid_errorPrior = 0;
-    double pid_integral = 0;
-    double pid_derivative;
-    ElapsedTime pid_timer = new ElapsedTime();
-    double kp = 0.5;
-    double ki = 0;
-    double kd = 0;
-
     @Override
     public void runOpMode(){
         /* Initialize the hardware variables.
          * The init() method of the hardware class does all the work here
          */
         robot.init(hardwareMap);
-//
-//        robot.leftMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-//        robot.rightMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-//        robot.leftMotor2.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-//        robot.rightMotor2.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-//        //calibrate compass sensor
-//        robot.compSensor.setMode(CompassSensor.CompassMode.CALIBRATION_MODE);
-//        bPusherTime.reset();
-//        while (bPusherTime.seconds() < 4){
-//            ;
-//        }
-//        if (robot.compSensor.calibrationFailed()){
-//            telemetry.addData("Say", "Compass Calibration Failed");    //
-//            telemetry.update();
-//        }
-//        robot.compSensor.setMode(CompassSensor.CompassMode.MEASUREMENT_MODE);
-        INIT_COMPASS_VALUE = robot.compSensor.getDirection();
 
         robot.accelSensor = new Accelerometer(hardwareMap);
 
@@ -76,41 +52,11 @@ public class TeleopTest extends LinearOpMode {
         // Wait for the game to start (driver presses PLAY)
         waitForStart();
 
-        pid_timer.reset();
-
-        double count = 0;
-        double count2 = 0;
-        double tempsumx = 0;
-        double tempsumy = 0;
-        double tempsumz = 0;
-
         // run until the end of the match (driver presses STOP)
         while (opModeIsActive()) {
             doDriveTrain();
             doClamping();
-            doVuforia();
             doLinearSlide();
-
-//            // Send telemetry message to signify robot running;
-//            telemetry.addData("Ball Dropper Position",   "%.2f", robot.ballDropper.getPosition());
-//            telemetry.addData("true/false", Double.isNaN(robot.ballDropper.getPosition()));
-//            telemetry.addData("left",  "%.2f", robot.leftMotor.getPower());
-//            telemetry.addData("right", "%.2f", robot.rightMotor.getPower());
-//
-//            telemetry.addData("Light", "%.2f %.2f %.2f", robot.lightSensor.getRawLightDetected(), robot.lightSensor.getLightDetected(), robot.lightSensor.getRawLightDetectedMax());
-//            telemetry.addData("Compass", "%.2f", robot.compSensor.getDirection()-INIT_COMPASS_VALUE);
-            count++;
-
-            if (count > 40 && count < 100) {
-                count2++;
-                tempsumx += robot.accelSensor.getxAccel();
-                tempsumy += robot.accelSensor.getyAccel();
-                tempsumz += robot.accelSensor.getzAccel();
-
-//                telemetry.addData("Accelerometer Avg", tempsumx/count + " " + tempsumy/count + " " + tempsumz/count);
-            }
-
-            telemetry.addData("Accelerometer Avg", tempsumx/(count2) + " " + tempsumy/(count2) + " " + tempsumz/(count2));
 
             telemetry.addData("hi", "hello");
             telemetry.addData("Accelerometer", robot.accelSensor.toString());
@@ -152,31 +98,20 @@ public class TeleopTest extends LinearOpMode {
     private void doClamping() {
         if (gamepad1.dpad_up) {
             //make claws clamp onto the object
-            robot.clawLeft.setPosition(0.2);
-            robot.clawRight.setPosition(0.2);
+            robot.clawLeft.setPosition(0.01);
+            robot.clawRight.setPosition(0.99);
             isClamping = true;
         }
-        else if (gamepad1.dpad_down) {
+        if (gamepad1.dpad_down) {
             //make claws release the object
-            robot.clawLeft.setPosition(0.7);
-            robot.clawRight.setPosition(0.7);
+            robot.clawLeft.setPosition(0.99);
+            robot.clawRight.setPosition(0.01);
             isClamping = false;
         }
-        else {
+        if (!isClamping) {
             //make claws hang loose if there is nothing to do
             robot.clawLeft.setPosition(0.5);
             robot.clawRight.setPosition(0.5);
-        }
-    }
-
-    private void doVuforia() {
-        if (vuforia.rgb != null) {
-            Bitmap bm = Bitmap.createBitmap(vuforia.rgb.getWidth(), vuforia.rgb.getHeight(), Bitmap.Config.RGB_565);
-            bm.copyPixelsFromBuffer(vuforia.rgb.getPixels());
-
-            //TODO: do something with the bitmap
-
-            //TODO: add VuMark sensing
         }
     }
 
@@ -211,34 +146,6 @@ public class TeleopTest extends LinearOpMode {
 
         // return scaled value.
         return dScale;
-    }
-
-    /**
-     * Returns motor powers for drive train after
-     * using PID control algorithm
-     * @param desiredDirection
-     * @param errorPrev
-     * @return [motorLeft power, motorRight power]
-     */
-    double[] getPIDPowers(double desiredDirection, double errorPrev) {
-        double[] resultPowers = new double[2];
-        double relativeRobotDir = robot.compSensor.getDirection() - INIT_COMPASS_VALUE;
-        //calculate PID stuff
-        double iterationTime = pid_timer.milliseconds();
-        double error = desiredDirection - relativeRobotDir;
-        pid_integral += error * iterationTime;
-        pid_derivative = (error - pid_errorPrior) / iterationTime;
-
-        //can also add a bias to this
-        double targetDir = kp*error + ki*pid_integral + kd*pid_derivative;
-        pid_errorPrior = error;
-
-        resultPowers[0] = robot.frontrightMotor.getPower() + 0.5 * (relativeRobotDir - targetDir);
-        resultPowers[1] = robot.frontleftMotor.getPower() - 0.5 * (relativeRobotDir - targetDir);
-
-        pid_timer.reset();
-
-        return resultPowers;
     }
 
     //random thing for future reference
