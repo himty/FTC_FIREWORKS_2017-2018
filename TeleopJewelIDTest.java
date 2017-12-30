@@ -57,7 +57,10 @@ public class TeleopJewelIDTest extends LinearOpMode {
      * @return whether initialization was successful
      */
     public void doVuforiaInitialization() {
+        //uncomment this to show what the camera sees
         VuforiaLocalizer.Parameters params = new VuforiaLocalizer.Parameters(R.id.cameraMonitorViewId);
+
+//        VuforiaLocalizer.Parameters params = new VuforiaLocalizer.Parameters();
         params.cameraDirection = VuforiaLocalizer.CameraDirection.BACK;
         params.vuforiaLicenseKey = "AVf224j/////AAAAGXlS5fEZWkUuukmNJ278W4N56l4Z/TC6awPG5XTapSLGWsXBBcbc7q+C00X3DfcAs1KmILva7ZKd6OAUyTyZ4fAHK2jrLL56vjoWLOZ1+Gr1ZGya6OYBcQmnbFbUrlGLhnyWtqkIu+RwGApf+LZW18bAaBzo2KOpaZZIaD+UJJ1PqzqtM/v4KH+FXBb4LHN4iHe+q1/gabF8m8Qv+Y2i1407Dre4K/mUp2N+6959a0ZckVqcesMhWtUrljKpie664FXHjYQYPIDQwKiSJfsg12nx4s7rto4ZYmAuTWdcwGZeWHz3gb5rutPgyuG5WiApPnL66MyQNsbA8K1DoK/75pGfY1M2GRzCnzrzenNHLZVt";
         params.cameraMonitorFeedback = VuforiaLocalizer.Parameters.CameraMonitorFeedback.AXES;
@@ -75,25 +78,25 @@ public class TeleopJewelIDTest extends LinearOpMode {
             Bitmap bm = Bitmap.createBitmap(vuforia.rgb.getWidth(), vuforia.rgb.getHeight(), Bitmap.Config.RGB_565);
             bm.copyPixelsFromBuffer(vuforia.rgb.getPixels());
 
-            long redAvgLeft = 0;
-            long blueAvgLeft = 0;
-            for (int y = bm.getHeight() / 2; y < bm.getHeight(); y++) {
-                for (int x = 0; x < bm.getWidth(); x++) {
+            double redAvgLeft = 0;
+            double blueAvgLeft = 0;
+            for (int y = 0; y < bm.getHeight(); y++) {
+                for (int x = bm.getWidth() / 2; x < bm.getWidth(); x++) {
                     int color = bm.getPixel(x, y);
 
-                    redAvgLeft += (color & 0xff0000) >> 16;
-                    blueAvgLeft += color & 0xff;
+                    redAvgLeft += ((color & 0xff0000) >> 16) / 100.0;
+                    blueAvgLeft += (color & 0xff) / 100.0;
                 }
             }
 
-            long redAvgRight = 0;
-            long blueAvgRight = 0;
-            for (int y = 0; y < bm.getHeight() / 2; y++) {
-                for (int x = 0; x < bm.getWidth(); x++) {
+            double redAvgRight = 0;
+            double blueAvgRight = 0;
+            for (int y = 0; y < bm.getHeight(); y++) {
+                for (int x = 0; x < bm.getWidth() / 2; x++) {
                     int color = bm.getPixel(x, y);
 
-                    redAvgLeft += (color & 0xff0000) >> 16;
-                    blueAvgLeft += color & 0xff;
+                    redAvgRight += ((color & 0xff0000) >> 16) / 100.0;
+                    blueAvgRight += (color & 0xff) / 100.0;
                 }
             }
 
@@ -104,13 +107,15 @@ public class TeleopJewelIDTest extends LinearOpMode {
             redAvgRight /= numPixels;
             blueAvgRight /= numPixels;
 
-            long certaintyForRed = (redAvgLeft - redAvgRight) - (blueAvgLeft - blueAvgRight);
+            double certaintyForRed = (redAvgLeft - redAvgRight) - (blueAvgLeft - blueAvgRight);
             double movementStartTime = robotTime.milliseconds();
             if (certaintyForRed > 0) {
                 //red is probably on the left
                 //TODO: start motor movement
                 while (robotTime.milliseconds() < movementStartTime + 2000) {
                     telemetry.addData("Red is on", "left");
+                    telemetry.addData("Red", redAvgLeft + " " + redAvgRight);
+                    telemetry.addData("Blue", blueAvgLeft + " " + blueAvgRight);
                     telemetry.update();
                 }
             }
@@ -119,6 +124,8 @@ public class TeleopJewelIDTest extends LinearOpMode {
                 //TODO: start motor movement
                 while (robotTime.milliseconds() < movementStartTime + 2000) {
                     telemetry.addData("Red is on", "right");
+                    telemetry.addData("Red", redAvgLeft + " " + redAvgRight);
+                    telemetry.addData("Blue", blueAvgLeft + " " + blueAvgRight);
                     telemetry.update();
                 }
             }
