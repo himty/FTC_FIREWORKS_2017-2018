@@ -13,8 +13,17 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.matrices.OpenGLMatrix;
 import org.firstinspires.ftc.robotcore.external.matrices.VectorF;
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
+import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
+import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
+import org.firstinspires.ftc.robotcore.external.navigation.RelicRecoveryVuMark;
+import org.firstinspires.ftc.robotcore.external.navigation.VuMarkInstanceId;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackable;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackableDefaultListener;
+import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackables;
+
+import static com.sun.tools.javac.util.Constants.format;
 
 @TeleOp(name="TeleopTest", group="FIREWORKS")
 public class TeleopTest extends LinearOpMode {
@@ -42,8 +51,6 @@ public class TeleopTest extends LinearOpMode {
          * The init() method of the hardware class does all the work here
          */
         robot.init(hardwareMap);
-
-        robot.accelSensor = new Accelerometer(hardwareMap);
 
         // Send telemetry message to signify robot waiting;
         telemetry.addData("Say", "Hello Driver");    //
@@ -119,6 +126,18 @@ public class TeleopTest extends LinearOpMode {
         robot.linearSlide.setPower(-1 * gamepad2.right_stick_y);
     }
 
+    private void doJewelHitter() {
+        //TODO: How does the robot put the stick down and up?
+        if (gamepad1.left_stick_y > 10) {
+            robot.jewelStick.setPosition(robot.jewelStick.getPosition() + 0.01);
+        }
+        if (gamepad1.left_stick_y < -10) {
+            robot.jewelStick.setPosition(robot.jewelStick.getPosition() - 0.01);
+        }
+
+        telemetry.addData("Jewel Hitter", robot.jewelStick.getPosition());
+    }
+
     double scaleInput(double dVal)  {
         double[] scaleArray = { 0.0, 0.05, 0.09, 0.10, 0.12, 0.15, 0.18, 0.24,
                 0.30, 0.36, 0.43, 0.50, 0.60, 0.72, 0.85, 1.00, 1.00 };
@@ -147,8 +166,9 @@ public class TeleopTest extends LinearOpMode {
         // return scaled value.
         return dScale;
     }
+}
 
-    //random thing for future reference
+//random thing for future reference
 //    for (VuforiaTrackable beac : beacons) {
 //        OpenGLMatrix pose = ((VuforiaTrackableDefaultListener) beac.getListener()).getRawPose();
 //
@@ -159,4 +179,3 @@ public class TeleopTest extends LinearOpMode {
 //            telemetry.addData(beac.getName() + " - Degrees", radiansToTurn);
 //        }
 //    }
-}
