@@ -1,156 +1,187 @@
 package org.firstinspires.ftc.teamcode;
 
-import com.qualcomm.robotcore.hardware.CompassSensor;
-import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.DcMotorSimple;
-import com.qualcomm.robotcore.hardware.HardwareMap;
-import com.qualcomm.robotcore.hardware.LightSensor;
-import com.qualcomm.robotcore.hardware.Servo;
+import android.content.Context;
+import android.graphics.Bitmap;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
+
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
-public class HardwareTest
-{
-    /* Public OpMode members. */
-    public DcMotor  frontleftMotor   = null;
-    public DcMotor  frontrightMotor  = null;
-    public DcMotor  backleftMotor = null;
-    public DcMotor  backrightMotor = null;
-    public DcMotor  linearSlide = null;
-    public Servo    clawLeft = null;
-    public Servo    clawRight = null;
+import org.firstinspires.ftc.robotcore.external.matrices.OpenGLMatrix;
+import org.firstinspires.ftc.robotcore.external.matrices.VectorF;
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
+import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
+import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
+import org.firstinspires.ftc.robotcore.external.navigation.RelicRecoveryVuMark;
+import org.firstinspires.ftc.robotcore.external.navigation.VuMarkInstanceId;
+import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackable;
+import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackableDefaultListener;
+import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackables;
 
-    public Servo    jewelStick = null;
+import static com.sun.tools.javac.util.Constants.format;
 
-    public DcMotor  RollArm   = null;
-    //    public DcMotor  ballHolder  = null;
-//    public DcMotor  beaconPusher = null;
-////    public DcMotor  popper      = null;
-////    public Servo    ballDropper = null;
-////    public Servo    beaconPusher= null;
-////    public CompassSensor compSensor = null;
-////    public LightSensor lightSensor = null;
-//
-    /* Local OpMode members. */
-    HardwareMap hwMap  = null;
-    private ElapsedTime period  = new ElapsedTime();
+@TeleOp(name="TeleopTest", group="FIREWORKS")
+public class TeleopTest extends LinearOpMode {
+    /* Declare OpMode members. */
+    HardwareTest    robot               = new HardwareTest();              // Use a K9'shardware
+    ElapsedTime     robotTime           = new ElapsedTime();
+    ElapsedTime     ballDropperTime     = new ElapsedTime(1000); //starting time is high so doesn't mess with timing
+    ElapsedTime     bPusherTime         = new ElapsedTime(1000);
 
-    /* Constructor */
-    public HardwareTest() {
+    final double MAX_JOYSTICK_VALUE = 1;
+
+    double targetLeftPower;
+    double targetRightPower;
+
+    boolean isClamping = false;
+
+    VuforiaLocalizerImplSubclass vuforia; //stores our instance of the Vuforia localization engine
+
+
+    double INIT_COMPASS_VALUE;
+
+    @Override
+    public void runOpMode(){
+        /* Initialize the hardware variables.
+         * The init() method of the hardware class does all the work here
+         */
+        robot.init(hardwareMap);
+
+        // Send telemetry message to signify robot waiting;
+        telemetry.addData("Say", "Hello Driver");    //
+        telemetry.update();
+
+        // Wait for the game to start (driver presses PLAY)
+        waitForStart();
+
+        // run until the end of the match (driver presses STOP)
+        while (opModeIsActive()) {
+            doDriveTrain();
+            doClamping();
+            doLinearSlide();
+            RollOutArm();
+
+            telemetry.addData("hi", "hello");
+            //telemetry.addData("Accelerometer", robot.accelSensor.toString());
+            telemetry.addData("servoleft", robot.clawLeft.getPosition());
+            telemetry.addData("servoright", robot.clawRight.getPosition());
+            telemetry.update();
+
+            // Pause for metronome tick.  40 mS each cycle = update 25 times a second.
+            robot.waitForTick(40);
+        }
     }
 
-    /* Initialize standard Hardware interfaces */
-    public void init(HardwareMap ahwMap) {
-//        // save reference to HW Map
-        hwMap = ahwMap;
-
-        // Define and Initialize Motors
-        frontleftMotor   = hwMap.dcMotor.get("frontleft_drive");
-        frontrightMotor  = hwMap.dcMotor.get("frontright_drive");
-        backleftMotor  = hwMap.dcMotor.get("backleft_drive");
-        backrightMotor = hwMap.dcMotor.get("backright_drive");
-        frontleftMotor.setDirection(DcMotor.Direction.FORWARD);
-        frontrightMotor.setDirection(DcMotor.Direction.REVERSE);
-        backleftMotor.setDirection(DcMotor.Direction.FORWARD);
-        backrightMotor.setDirection(DcMotor.Direction.REVERSE);
-
-        clawLeft = hwMap.servo.get("claw_left");
-        clawRight = hwMap.servo.get("claw_right");
-        linearSlide = hwMap.dcMotor.get("linear_slide");
-        jewelStick = hwMap.servo.get("jewel_stick");
-        RollArm = hwMap.dcMotor.get("roll_arm");
-
-        RollArm.setDirection(DcMotor.Direction.FORWARD);
-        linearSlide.setDirection(DcMotor.Direction.REVERSE);
-
-        clawLeft.setPosition(0.5);
-        clawRight.setPosition(0.5);
-        jewelStick.setPosition(0);
-        //RollArm.setPower(0);
-//
-////        popper      = hwMap.dcMotor.get("popper");
-
-////        ballHolder = hwMap.dcMotor.get("ball_holder");
-////        beaconPusher = hwMap.dcMotor.get("beacon_pusher");
-////        beaconPusher.setDirection(DcMotorSimple.Direction.REVERSE);
-//
-//        // Set all motors to run without encoders.
-//        // May want to use RUN_USING_ENCODERS if encoders are installed.
-//        linearSlide.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-////        ballHolder.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-////        beaconPusher.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-////        popper.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-//        leftMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-//        leftMotor2.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-//        rightMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-//        rightMotor2.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-//
-//
-//        linearSlide.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-////        ballHolder.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-////        beaconPusher.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-////        popper.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-//        leftMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-//        leftMotor2.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-//        rightMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-//        rightMotor2.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-//
-//        leftMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-//        leftMotor2.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-//        rightMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-//        rightMotor2.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        //linearSlide.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-////        ballHolder.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-////        beaconPusher.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-////        popper.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-//
-//
-//
-//        // Set all motors to zero power
-//        leftMotor.setPower(0);
-//        leftMotor2.setPower(0);
-//        rightMotor.setPower(0);
-//        rightMotor2.setPower(0);
-//        linearSlide.setPower(0);
-////        ballHolder.setPower(0);
-////        beaconPusher.setPower(0);
-////        popper.setPower(0);
-//
-//
-////        // Define and initialize ALL installed servos.
-////        ballDropper = hwMap.servo.get("ball_dropper");
-////        beaconPusher = hwMap.servo.get("beacon_pusher");
-////
-////        ballDropper.setPosition(0);
-////        beaconPusher.setPosition(0.5);
-//
-//
-//        //Define sensors
-////        compSensor = hwMap.compassSensor.get("compass_sensor");
-////        lightSensor = hwMap.lightSensor.get("light_sensor");
-    }
-
-    /***
-     *
-     * waitForTick implements a periodic delay. However, this acts like a metronome with a regular
-     * periodic tick.  This is used to compensate for varying processing times for each cycle.
-     * The function looks at the elapsed cycle time, and sleeps for the remaining time interval.
-     *
-     * @param periodMs  Length of wait cycle in mSec.
+    /**
+     * Makes the robot's drive train move
      */
-    public void waitForTick(long periodMs) {
+    private void doDriveTrain() {
+        //calculate motor powers
+        targetLeftPower = (gamepad1.right_stick_y - 2*gamepad1.right_stick_x);
+        targetRightPower = (gamepad1.right_stick_y + 2 * gamepad1.right_stick_x);
 
-        long  remaining = periodMs - (long)period.milliseconds();
-
-        // sleep for the remaining portion of the regular cycle period.
-        if (remaining > 0) {
-            try {
-                Thread.sleep(remaining);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
+        if (targetLeftPower < 0 && targetRightPower > 0) {
+            targetRightPower = targetRightPower * 0.5;
         }
 
-        // Reset the cycle clock for the next pass.
-        period.reset();
+        if (gamepad1.right_bumper){
+            targetLeftPower /= 5;
+            targetRightPower /= 5;
+        }
+
+        //set powers
+//            targetLeftPower = scaleInput(Range.clip(targetLeftPower, -1, 1));
+//            targetRightPower = scaleInput(Range.clip(targetLeftPower, -1, 1));
+        robot.frontleftMotor.setPower(targetLeftPower);
+        robot.backleftMotor.setPower(targetLeftPower);
+        robot.frontrightMotor.setPower(targetRightPower);
+        robot.backrightMotor.setPower(targetRightPower);
+    }
+
+    private void doClamping() {
+        if (gamepad1.dpad_up) {
+            //make claws clamp onto the object
+            robot.clawLeft.setPosition(0.7);
+            robot.clawRight.setPosition(0.2);
+            isClamping = true;
+        } else if (gamepad1.dpad_down) {
+            //make claws release the object
+            robot.clawLeft.setPosition(0.2);
+            robot.clawRight.setPosition(0.7);
+            isClamping = false;
+        } else {
+            //make claws hang loose if there is nothing to do
+            robot.clawLeft.setPosition(0.5);
+            robot.clawRight.setPosition(0.5);
+        }
+    }
+
+    private void doLinearSlide() {
+        robot.linearSlide.setPower(gamepad2.right_stick_y);
+    }
+
+    private void RollOutArm() {
+        robot.RollArm.setPower(gamepad2.left_stick_y);
+
+        //robot.linearSlide.setPower(-1 * gamepad2.right_stick_y);
+    }
+
+
+    private void doJewelHitter() {
+        //TODO: How does the robot put the stick down and up?
+        if (gamepad1.left_stick_y > 10) {
+            robot.jewelStick.setPosition(robot.jewelStick.getPosition() + 0.01);
+        }
+        if (gamepad1.left_stick_y < -10) {
+            robot.jewelStick.setPosition(robot.jewelStick.getPosition() - 0.01);
+        }
+
+        telemetry.addData("Jewel Hitter", robot.jewelStick.getPosition());
+    }
+
+    double scaleInput(double dVal)  {
+        double[] scaleArray = { 0.0, 0.05, 0.09, 0.10, 0.12, 0.15, 0.18, 0.24,
+                0.30, 0.36, 0.43, 0.50, 0.60, 0.72, 0.85, 1.00, 1.00 };
+
+        // get the corresponding index for the scaleInput array.
+        int index = (int) ((dVal/MAX_JOYSTICK_VALUE) * 16.0); //number is now <= 1
+
+        // index should be positive.
+        if (index < 0) {
+            index = -index;
+        }
+
+        // index cannot exceed size of array minus 1.
+        if (index > 16) {
+            index = 16;
+        }
+
+        // get value from the array.
+        double dScale = 0.0;
+        if (dVal < 0) {
+            dScale = -scaleArray[index];
+        } else {
+            dScale = scaleArray[index];
+        }
+
+        // return scaled value.
+        return dScale;
     }
 }
+
+//random thing for future reference
+//    for (VuforiaTrackable beac : beacons) {
+//        OpenGLMatrix pose = ((VuforiaTrackableDefaultListener) beac.getListener()).getRawPose();
+//
+//        if (pose != null) {
+//            VectorF translation = pose.getTranslation();
+//            telemetry.addData(beac.getName() + " - Translation", translation);
+//            double radiansToTurn = Math.toDegrees(Math.atan2(translation.get(1), translation.get(2)));
+//            telemetry.addData(beac.getName() + " - Degrees", radiansToTurn);
+//        }
+//    }
