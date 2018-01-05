@@ -43,7 +43,7 @@ public class Autonomous2017 extends LinearOpMode {
     //    VuforiaTrackables beacons;
     int fileCount = 1;
 
-    final String TEAM_COLOR = "blue";
+    final String TEAM_COLOR = "BLUE";
 
     static final double FORWARD_SPEED = -1;
     static final double TURN_SPEED = 1;
@@ -80,29 +80,96 @@ public class Autonomous2017 extends LinearOpMode {
         telemetry.addData("Status", "Running");
         telemetry.update();
 
-        //do jewel sensing
+        //do jewel sensing and move forwards/backwards
+        //update offsetTime
+        doJewelSensing();
 
-        //go forwards or backwards
-        offsetTime = 0.5;
+       //go to the VuMark
+       runtime.reset();
+       //make this condition based off of when the pose's x is near 0 or something
+       while(currentVuMark != RelicRecoveryVuMark.UNKNOWN
+               && runtime.seconds() < 2 + offsetTime) {
+           doVuMark();
+       }
 
-        while (true) {
-            doVuMark();
+       //go to the box thing
+       runtime.reset();
+       while(currentVuMark != RelicRecoveryVuMark.UNKNOWN
+               && runtime.seconds() < 2) {
+           doVuMark();
+       }
+    }
+    
+     /**
+     * Senses the position of each type of jewel (red or blue)
+     * and acts on it. (ALL OTHER ROBOT MOVEMENTS ARE STOPPED)
+     */
+    private void doJewelSensing() {
+        telemetry.addData("Starting", "Jewel Sensing" + robotTime.seconds());
+        telemetry.update();
+        if (vuforia.rgb != null) {
+            Bitmap bm = Bitmap.createBitmap(vuforia.rgb.getWidth(), vuforia.rgb.getHeight(), Bitmap.Config.RGB_565);
+            bm.copyPixelsFromBuffer(vuforia.rgb.getPixels());
+
+            double redAvgLeft = 0;
+            double blueAvgLeft = 0;
+            for (int y = 0; y < bm.getHeight(); y++) {
+                for (int x = bm.getWidth() / 2; x < bm.getWidth(); x++) {
+                    int color = bm.getPixel(x, y);
+
+                    redAvgLeft += ((color & 0xff0000) >> 16) / 100.0;
+                    blueAvgLeft += (color & 0xff) / 100.0;
+                }
+            }
+
+            double redAvgRight = 0;
+            double blueAvgRight = 0;
+            for (int y = 0; y < bm.getHeight(); y++) {
+                for (int x = 0; x < bm.getWidth() / 2; x++) {
+                    int color = bm.getPixel(x, y);
+
+                    redAvgRight += ((color & 0xff0000) >> 16) / 100.0;
+                    blueAvgRight += (color & 0xff) / 100.0;
+                }
+            }
+
+            int numPixels = bm.getHeight() * bm.getWidth() / 4;
+
+            redAvgLeft /= numPixels;
+            blueAvgLeft /= numPixels;
+            redAvgRight /= numPixels;
+            blueAvgRight /= numPixels;
+
+            double certaintyForRed = (redAvgLeft - redAvgRight) - (blueAvgLeft - blueAvgRight);
+
+            //TODO: test this movement time
+            double movementTime = 500;
+            //robot.jewelStick.setPosition(0.5) //this is a temporary position value. Untested
+            if (certaintyForRed > 0) {
+                //red is probably on the left
+                
+                //for BLUE team, the robot should go right, which is forwards
+                //for RED team, the robot should go left, which is also forwards
+                setDrivePowers(0.7, 0.7);
+                offsetTime = movementTime * -1;
+            }
+            else {
+                //red is probably on the right
+                
+                //for BLUE team, the robot should go left, which is backwards
+                //for RED team, the robot should go right, which is also backwards
+                setDrivePowers(-0.7, -0.7);
+                offsetTime = movementTime;
+            }
+            
+            runtime.reset();
+
+            
+            while (runtime.milliseconds() < movementTime) {
+                idle();
+            }
+            setDrivePowers(0, 0);
         }
-
-        //go to the VuMark
-//        runtime.reset();
-//        //make this condition based off of when the pose's x is near 0 or something
-//        while(currentVuMark == RelicRecoveryVuMark.UNKNOWN
-//                && runtime.seconds() < 100000 + offsetTime) {
-//            doVuMark();
-//        }
-//
-//        //go to the box thing
-//        runtime.reset();
-//        while(currentVuMark != RelicRecoveryVuMark.UNKNOWN
-//                && runtime.seconds() < 1) {
-//            doVuMark();
-//        }
     }
 
     private void doVuMark() {
@@ -190,5 +257,12 @@ public class Autonomous2017 extends LinearOpMode {
         relicTrackables = this.vuforia.loadTrackablesFromAsset("RelicVuMark");
         relicTemplate = relicTrackables.get(0);
         relicTemplate.setName("relicVuMarkTemplate"); // can help in debugging; otherwise not necessary
+    }
+    
+    private void setDrivePowers(double leftPower, double rightPower) {
+        robot.frontleftMotor.setPower(leftPower);
+        robot.backleftMotor.setPower(leftPower);
+        robot.frontrightMotor.setPower(rightPower);
+        robot.backrightMotor.setPower(rightPower);
     }
 }
