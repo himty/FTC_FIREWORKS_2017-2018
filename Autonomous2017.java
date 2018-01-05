@@ -2,8 +2,24 @@ package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
-import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.util.ElapsedTime;
+
+import org.firstinspires.ftc.robotcore.external.matrices.OpenGLMatrix;
+import org.firstinspires.ftc.robotcore.external.matrices.VectorF;
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
+import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
+import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
+import org.firstinspires.ftc.robotcore.external.navigation.RelicRecoveryVuMark;
+import org.firstinspires.ftc.robotcore.external.navigation.VuMarkInstanceId;
+import org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer;
+import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackable;
+import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackableDefaultListener;
+import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackables;
+
+import java.io.File;
+
+import static com.sun.tools.javac.util.Constants.format;
 
 //import org.firstinspires.ftc.robotcontroller.external.samples.HardwareTest;
 
@@ -15,31 +31,37 @@ public class Autonomous2017 extends LinearOpMode {
     HardwareTest robot = new HardwareTest();
     private ElapsedTime runtime = new ElapsedTime();
 
-/*
-    double RED_MIN = 0.255, RED_MAX = 0.285;        //mean = 0.28
-    double BLUE_MIN = 0.21, BLUE_MAX = 0.25;      //mean = 0.23
-*/
+    double offsetTime = 0;
 
-    final String TEAM = "Team TBD (gasp)";
+    /*
+     * Vuforia variables
+     */
+    RelicRecoveryVuMark currentVuMark = RelicRecoveryVuMark.UNKNOWN;
+    OpenGLMatrix lastLocation = null;
+    VuforiaLocalizerImplSubclass vuforia; //stores our instance of the Vuforia localization engine
+    File directory;
+    //    VuforiaTrackables beacons;
+    int fileCount = 1;
+
+    final String TEAM_COLOR = "blue";
 
     static final double FORWARD_SPEED = -1;
     static final double TURN_SPEED = 1;
     static final double POWER = 1;
 
-    //int moveNum = 0;
-
-    //final int SIGN = -1;
-
-    int i;
-    //double temp;
+    VuforiaTrackables relicTrackables;
+    VuforiaTrackable relicTemplate;
 
     public void runOpMode() throws InterruptedException {
-
         /*
          * Initialize the drive system variables.
          * The init() method of the hardware class does all the work here
          */
         robot.init(hardwareMap);
+        initVuforia();
+        robot.accelSensor = new Accelerometer(hardwareMap);
+
+        initVuMark();
 
         // Send telemetry message to signify robot waiting;
         telemetry.addData("Status", "Ready to run");    //
@@ -48,189 +70,125 @@ public class Autonomous2017 extends LinearOpMode {
         // Wait for the game to start (driver presses PLAY)
         waitForStart();
 
+        while (runtime.seconds() < 6.5) {
+            //wait for the camera to boot
+            idle();
+        }
+
+        relicTrackables.activate();
+
         telemetry.addData("Status", "Running");
         telemetry.update();
+
+        //do jewel sensing
+
+        //go forwards or backwards
+        offsetTime = 0.5;
+
+        while (true) {
+            doVuMark();
+        }
+
+        //go to the VuMark
+//        runtime.reset();
+//        //make this condition based off of when the pose's x is near 0 or something
+//        while(currentVuMark == RelicRecoveryVuMark.UNKNOWN
+//                && runtime.seconds() < 100000 + offsetTime) {
+//            doVuMark();
+//        }
+//
+//        //go to the box thing
+//        runtime.reset();
+//        while(currentVuMark != RelicRecoveryVuMark.UNKNOWN
+//                && runtime.seconds() < 1) {
+//            doVuMark();
+//        }
     }
 
+    private void doVuMark() {
+        /**
+         * See if any of the instances of {@link relicTemplate} are currently visible.
+         * {@link RelicRecoveryVuMark} is an enum which can have the following values:
+         * UNKNOWN, LEFT, CENTER, and RIGHT. When a VuMark is visible, something other than
+         * UNKNOWN will be returned by {@link RelicRecoveryVuMark#from(VuforiaTrackable)}.
+         */
+        RelicRecoveryVuMark vuMark = RelicRecoveryVuMark.from(relicTemplate);
+        if (vuMark != RelicRecoveryVuMark.UNKNOWN) {
+            //some VuMark is visible
+            currentVuMark = vuMark;
 
-    // first step: claw catches the block
-    void throwball() {
-        robot.clawLeft.setPosition(0.8);
-        runtime.reset();
-        while (runtime.seconds() < 1) {
-            idle();
+            // make the robot go parallel to the wall
+
+            /* For fun, we also exhibit the navigational pose. In the Relic Recovery game,
+             * it is perhaps unlikely that you will actually need to act on this pose information, but
+             * we illustrate it nevertheless, for completeness. */
+            OpenGLMatrix pose = ((VuforiaTrackableDefaultListener)relicTemplate.getListener()).getPose();
+
+            /* We further illustrate how to decompose the pose into useful rotational and
+             * translational components */
+            if (pose != null) {
+                //we can fix the robot's path with this
+                VectorF trans = pose.getTranslation();
+                Orientation rot = Orientation.getOrientation(pose, AxesReference.EXTRINSIC, AxesOrder.XYZ, AngleUnit.DEGREES);
+
+                // Extract the X, Y, and Z components of the offset of the target relative to the robot
+                double tX = trans.get(0);
+                double tY = trans.get(1);
+                double tZ = trans.get(2);
+
+                // Extract the rotational components of the target relative to the robot
+                double rX = rot.firstAngle;
+                double rY = rot.secondAngle;
+                double rZ = rot.thirdAngle;
+
+                telemetry.addData("tX", trans.get(0));
+                telemetry.addData("tY", trans.get(1));
+                telemetry.addData("tZ", trans.get(2));
+                telemetry.addData("rX", rot.firstAngle);
+                telemetry.addData("rY", rot.secondAngle);
+                telemetry.addData("rZ", rot.thirdAngle);
+
+                if (pose != null) {
+                    VectorF translation = pose.getTranslation();
+                    telemetry.addData("Translation", translation);
+                    double radiansToTurn = Math.toDegrees(Math.atan2(translation.get(1), translation.get(2)));
+                    telemetry.addData("Degrees", radiansToTurn);
+                }
+            }
+        }
+        else {
+            telemetry.addData("VuMark", "not visible");
         }
 
-/*        // Start
-        //Move forward
-        setPowers(FORWARD_SPEED, FORWARD_SPEED);
-        runtime.reset();
-        while (opModeIsActive() && (runtime.seconds() < 1.1)) {
-            telemetry.addData("Path", "Leg 1: %2.5f S Elapsed", runtime.seconds());
-            telemetry.update();
-            idle();
-        }
-
-        //Turn left towards first beacon
-        setPowers(-FORWARD_SPEED, FORWARD_SPEED);
-        runtime.reset();
-        while (opModeIsActive() && (runtime.seconds() < 0.8)) {
-            telemetry.addData("Path", "Leg 1: %2.5f S Elapsed", runtime.seconds());
-            telemetry.update();
-            idle();
-        }
-
-        //Go towards first beacon
-        setPowers(FORWARD_SPEED, FORWARD_SPEED);
-        runtime.reset();
-        while (opModeIsActive() && (runtime.seconds() < 2.3)) {
-            telemetry.addData("Path", "Leg 1: %2.5f S Elapsed", runtime.seconds());
-            telemetry.update();
-            idle();
-        }
-
-        //Turn right to position in front of first beacon
-        setPowers(FORWARD_SPEED, -FORWARD_SPEED);
-        runtime.reset();
-        while (opModeIsActive() && (runtime.seconds() < 1.13)) {
-            telemetry.addData("Path", "Leg 1: %2.5f S Elapsed", runtime.seconds());
-            telemetry.update();
-            idle();
-        }
-
-        //Do stuff to beacon
-        //doBeaconAction();
-
-        //Move to next beacon -- NOT STRAIGHT
-        setPowers(FORWARD_SPEED, FORWARD_SPEED);
-        runtime.reset();
-        while (opModeIsActive() && (runtime.seconds() < 1)) {
-            telemetry.addData("Path", "Leg 1: %2.5f S Elapsed", runtime.seconds());
-            telemetry.update();
-            idle();
-        }
-
-
-        // Step 4:  Stop and close the claw.
-        setPowers(0, 0);
-        telemetry.addData("Path", "Complete");
         telemetry.update();
-        sleep(1000);
-        idle();
-    }*/
-/*
-
-    void setPowers(double left, double right) {
-        robot.leftMotor.setPower(left);
-        robot.leftMotor2.setPower(left);
-        robot.rightMotor.setPower(right);
-        robot.rightMotor2.setPower(right);
     }
-*/
 
+    /**
+     * Initializes the Vuforia engine
+     * @return whether initialization was successful
+     */
+    private void initVuforia() {
+        //uncomment this to show what the camera sees
+        VuforiaLocalizer.Parameters params = new VuforiaLocalizer.Parameters(R.id.cameraMonitorViewId);
 
+        //uncomment this to not show what the camera sees (save battery)
+//        VuforiaLocalizer.Parameters params = new VuforiaLocalizer.Parameters();
+
+        params.cameraDirection = VuforiaLocalizer.CameraDirection.BACK;
+        params.vuforiaLicenseKey = "AVf224j/////AAAAGXlS5fEZWkUuukmNJ278W4N56l4Z/TC6awPG5XTapSLGWsXBBcbc7q+C00X3DfcAs1KmILva7ZKd6OAUyTyZ4fAHK2jrLL56vjoWLOZ1+Gr1ZGya6OYBcQmnbFbUrlGLhnyWtqkIu+RwGApf+LZW18bAaBzo2KOpaZZIaD+UJJ1PqzqtM/v4KH+FXBb4LHN4iHe+q1/gabF8m8Qv+Y2i1407Dre4K/mUp2N+6959a0ZckVqcesMhWtUrljKpie664FXHjYQYPIDQwKiSJfsg12nx4s7rto4ZYmAuTWdcwGZeWHz3gb5rutPgyuG5WiApPnL66MyQNsbA8K1DoK/75pGfY1M2GRzCnzrzenNHLZVt";
+        params.cameraMonitorFeedback = VuforiaLocalizer.Parameters.CameraMonitorFeedback.AXES;
+        vuforia = new VuforiaLocalizerImplSubclass(params);
+    }
+
+    private void initVuMark() {
+        /**
+         * Load the data set containing the VuMarks for Relic Recovery. There's only one trackable
+         * in this data set: all three of the VuMarks in the game were created from this one template,
+         * but differ in their instance id information.
+         * @see VuMarkInstanceId
+         */
+        relicTrackables = this.vuforia.loadTrackablesFromAsset("RelicVuMark");
+        relicTemplate = relicTrackables.get(0);
+        relicTemplate.setName("relicVuMarkTemplate"); // can help in debugging; otherwise not necessary
     }
 }
-
-    /*void doBeaconAction() {
-        temp = 0;
-        for (i = 0; i < 100; i++) {
-            temp += robot.lightSensor.getLightDetected();
-        }
-        temp /= 100;
-
-        if (temp <= RED_MAX && temp >= RED_MIN) { //is red
-            if (TEAM.equals("red")) {
-                telemetry.addData("Beacon", "Red: push this %.2f", temp);
-                telemetry.update();
-//                pushButton();
-                //moveToOtherButton();
-            } else {
-                telemetry.addData("Beacon", "Red: push other %.2f", temp);
-                telemetry.update();
-//                moveToOtherButton();
-//                pushButton();
-            }
-        } else if (temp <= BLUE_MAX && temp >= BLUE_MIN) { //is blue
-            if (TEAM.equals("blue")) {
-                telemetry.addData("Beacon", "Blue: push this %.2f", temp);
-                telemetry.update();
-//                pushButton();
-                //moveToOtherButton();
-            } else {
-                telemetry.addData("Beacon", "Blue: push other %.2f", temp);
-                telemetry.update();
-//                moveToOtherButton();
-//                pushButton();
-            }
-        } else {
-            telemetry.addData("Error", "Indistinguishable beacon color %.2f", temp);
-            telemetry.update();
-            moveToOtherButton();
-        }
-    }
-
-    ///
-
-    {
-
-        //Go forwards
-        setPowers(FORWARD_SPEED, FORWARD_SPEED);
-        runtime.reset();
-        while (opModeIsActive() && (runtime.seconds() < 3)) {
-            telemetry.addData("Path", "Leg 1: %2.5f S Elapsed", runtime.seconds());
-            telemetry.update();
-            idle();
-
-        }
-    }
-
-    void grabjewel() {
-        robot.claw.setPower(0.8);
-        runtime.reset();
-        while (runtime.seconds() < 1.5) { //TODO test this
-            idle();
-        }
-
-
-
-        //Go backwards
-        setPowers(-FORWARD_SPEED, FORWARD_SPEED);
-        runtime.reset();
-        while (opModeIsActive() && (runtime.seconds() < 2)) {
-            telemetry.addData("Path", "Leg 1: %2.5f S Elapsed", runtime.seconds());
-            telemetry.update();
-            idle();
-
-            //Turn right towards jewel column
-            setPowers(TURN_SPEED, TURN_SPEED);
-            runtime.reset();
-            while (opModeIsActive() && (runtime.seconds() < 0.8)) {
-                telemetry.addData("Path", "Leg 1: %2.5f S Elapsed", runtime.seconds());
-                telemetry.update();
-                idle();
-
-
-//add go forward
-
-
-//*//*                ///
-//
-//                robot.beaconPusher.setPower(-0.2);
-//                runtime.reset();
-//                while (runtime.seconds() < 2) {
-//                    idle();
-//                }
-//
-//                robot.beaconPusher.setPower(0);
-//            }
-//
-//        void moveToOtherButton() {
-//            setPowers(FORWARD_SPEED, FORWARD_SPEED);
-//            runtime.reset();
-//            while (runtime.seconds() < 0.3) {
-//                ;
-//            }
-//            setPowers(0,0);
-//        }
-//    }*/
