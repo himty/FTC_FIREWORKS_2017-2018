@@ -172,7 +172,7 @@ public class Autonomous2017 extends LinearOpMode {
             double redAvgLeft = 0;
             double blueAvgLeft = 0;
             for (int y = 0; y < bm.getHeight(); y++) {
-                for (int x = bm.getWidth() / 2; x < bm.getWidth(); x++) {
+                for (int x = bm.getWidth() * 2/3; x < bm.getWidth(); x++) {
                     int color = bm.getPixel(x, y);
                     redAvgLeft += ((color & 0xff0000) >> 16) / 100.0;
                     blueAvgLeft += (color & 0xff) / 100.0;
@@ -182,7 +182,7 @@ public class Autonomous2017 extends LinearOpMode {
             double redAvgRight = 0;
             double blueAvgRight = 0;
             for (int y = 0; y < bm.getHeight(); y++) {
-                for (int x = 0; x < bm.getWidth() / 2; x++) {
+                for (int x = bm.getWidth() * 1/3; x < bm.getWidth() *2/3; x++) {
                     int color = bm.getPixel(x, y);
 
                     redAvgRight += ((color & 0xff0000) >> 16) / 100.0;
