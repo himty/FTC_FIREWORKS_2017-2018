@@ -2,6 +2,7 @@ package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.matrices.OpenGLMatrix;
@@ -19,6 +20,8 @@ import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackables;
 
 import java.io.File;
 
+import android.graphics.Bitmap;
+
 import static com.sun.tools.javac.util.Constants.format;
 
 //import org.firstinspires.ftc.robotcontroller.external.samples.HardwareTest;
@@ -32,6 +35,11 @@ public class Autonomous2017 extends LinearOpMode {
     private ElapsedTime runtime = new ElapsedTime();
 
     double offsetTime = 0;
+
+    final double JEWEL_STICK_MAX = 0.56;
+    //max is the bottom of the jewelstick
+    final double JEWEL_STICK_MIN = 0.07;
+    //to make fartehr away, do higher
 
     /*
      * Vuforia variables
@@ -52,6 +60,8 @@ public class Autonomous2017 extends LinearOpMode {
     VuforiaTrackables relicTrackables;
     VuforiaTrackable relicTemplate;
 
+
+
     public void runOpMode() throws InterruptedException {
         /*
          * Initialize the drive system variables.
@@ -59,9 +69,14 @@ public class Autonomous2017 extends LinearOpMode {
          */
         robot.init(hardwareMap);
         initVuforia();
-        robot.accelSensor = new Accelerometer(hardwareMap);
+        //robot.accelSensor = new Accelerometer(hardwareMap);
 
         initVuMark();
+
+        robot.frontleftMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        robot.frontrightMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        robot.backleftMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        robot.backrightMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
         // Send telemetry message to signify robot waiting;
         telemetry.addData("Status", "Ready to run");    //
@@ -70,53 +85,95 @@ public class Autonomous2017 extends LinearOpMode {
         // Wait for the game to start (driver presses PLAY)
         waitForStart();
 
+
         while (runtime.seconds() < 6.5) {
             //wait for the camera to boot
             idle();
         }
 
-        relicTrackables.activate();
 
+        relicTrackables.activate();
         telemetry.addData("Status", "Running");
         telemetry.update();
+
+        //NEW ACCION
+        //robot clamps onto the block
+
+        robot.clawLeft.setPosition(0.7);
+        robot.clawRight.setPosition(0.2);
+        runtime.reset();
+        while (runtime.seconds() < 1) {
+            idle();
+        }
+
+
+        setDrivePowers(-0.3, -0.3);
+        runtime.reset();
+        while(runtime.seconds() < 0.3) {
+            idle();
+        }
+
+
+        setDrivePowers(0.3, -0.3);
+        runtime.reset();
+        while(runtime.seconds() < 0.3) {
+            idle();
+        }
+
+        setDrivePowers(0.2, 0.2);
+        runtime.reset();
+        while(runtime.seconds() < 1 && currentVuMark != RelicRecoveryVuMark.UNKNOWN) {
+            doVuMark();
+        }
 
         //do jewel sensing and move forwards/backwards
         //update offsetTime
         doJewelSensing();
 
-       //go to the VuMark
-       runtime.reset();
-       //make this condition based off of when the pose's x is near 0 or something
-       while(currentVuMark != RelicRecoveryVuMark.UNKNOWN
-               && runtime.seconds() < 2 + offsetTime) {
-           doVuMark();
-       }
+/*
+       //move to middle of the pot(aka platform)
+        setDrivePowers(0.3, 0.3);
+        runtime.reset();
+        while (runtime.seconds() < 2) {
+            idle();
+        }*/
+/*
+        setDrivePowers(FORWARD_SPEED, FORWARD_SPEED);
+        while (runtime.seconds() < 5) {
+        }
+        runtime.reset();
+*/
 
-       //go to the box thing
-       runtime.reset();
-       while(currentVuMark != RelicRecoveryVuMark.UNKNOWN
-               && runtime.seconds() < 2) {
-           doVuMark();
-       }
+//        //go to the VuMark
+//        runtime.reset();
+//        //make this condition based off of when the pose's x is near 0 or something
+//        while(currentVuMark != RelicRecoveryVuMark.UNKNOWN
+//                && runtime.seconds() < 2 + offsetTime) {
+//            doVuMark();
+//        }
+//        //go to the box thing
+//        runtime.reset();
+//        while(currentVuMark != RelicRecoveryVuMark.UNKNOWN
+//                && runtime.seconds() < 2) {
+//            doVuMark();
+//        }
     }
-    
-     /**
+
+    /**
      * Senses the position of each type of jewel (red or blue)
      * and acts on it. (ALL OTHER ROBOT MOVEMENTS ARE STOPPED)
      */
     private void doJewelSensing() {
-        telemetry.addData("Starting", "Jewel Sensing" + robotTime.seconds());
+        telemetry.addData("Starting", "Jewel Sensing" + runtime.seconds());
         telemetry.update();
         if (vuforia.rgb != null) {
             Bitmap bm = Bitmap.createBitmap(vuforia.rgb.getWidth(), vuforia.rgb.getHeight(), Bitmap.Config.RGB_565);
             bm.copyPixelsFromBuffer(vuforia.rgb.getPixels());
-
             double redAvgLeft = 0;
             double blueAvgLeft = 0;
             for (int y = 0; y < bm.getHeight(); y++) {
                 for (int x = bm.getWidth() / 2; x < bm.getWidth(); x++) {
                     int color = bm.getPixel(x, y);
-
                     redAvgLeft += ((color & 0xff0000) >> 16) / 100.0;
                     blueAvgLeft += (color & 0xff) / 100.0;
                 }
@@ -142,34 +199,58 @@ public class Autonomous2017 extends LinearOpMode {
 
             double certaintyForRed = (redAvgLeft - redAvgRight) - (blueAvgLeft - blueAvgRight);
 
-            //TODO: test this movement time
-            double movementTime = 500;
-            //robot.jewelStick.setPosition(0.5) //this is a temporary position value. Untested
+            //moving forwards 1 sec
+            double movementTime = 0.7;
+            double drivePower;
+
+            robot.jewelStick.setPosition(JEWEL_STICK_MAX); //put the jewel stick down
+            runtime.reset();
+            while (runtime.seconds() < 1.1) {
+                idle();
+            }
+
             if (certaintyForRed > 0) {
                 //red is probably on the left
-                
+
                 //for BLUE team, the robot should go right, which is forwards
                 //for RED team, the robot should go left, which is also forwards
-                setDrivePowers(0.7, 0.7);
+                drivePower = 0.2;
+                setDrivePowers(drivePower, drivePower);
                 offsetTime = movementTime * -1;
             }
             else {
                 //red is probably on the right
-                
+
                 //for BLUE team, the robot should go left, which is backwards
                 //for RED team, the robot should go right, which is also backwards
-                setDrivePowers(-0.7, -0.7);
+                drivePower = -0.2;
+                setDrivePowers(drivePower, drivePower);
                 offsetTime = movementTime;
             }
-            
-            runtime.reset();
 
-            
-            while (runtime.milliseconds() < movementTime) {
+            runtime.reset();
+            while (runtime.seconds() < movementTime) {
                 idle();
             }
+
+            setDrivePowers(0, 0);
+            runtime.reset();
+            while(runtime.seconds() < 1) {
+                idle();
+            }
+
+            //go back to beginning position
+            //multiply power by -1 to go reverse
+            drivePower *= -1;
+            setDrivePowers(drivePower, drivePower);
+            runtime.reset();
+            while (runtime.seconds() < movementTime) {
+                idle();
+            }
+
             setDrivePowers(0, 0);
         }
+
     }
 
     private void doVuMark() {
@@ -258,7 +339,7 @@ public class Autonomous2017 extends LinearOpMode {
         relicTemplate = relicTrackables.get(0);
         relicTemplate.setName("relicVuMarkTemplate"); // can help in debugging; otherwise not necessary
     }
-    
+
     private void setDrivePowers(double leftPower, double rightPower) {
         robot.frontleftMotor.setPower(leftPower);
         robot.backleftMotor.setPower(leftPower);
