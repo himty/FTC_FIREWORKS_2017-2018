@@ -115,11 +115,20 @@ public class TeleopFloorIDTest extends LinearOpMode {
             leftHeight /= floorHeights.length / 60;
             rightHeight /= floorHeights.length / 60;
             
+            telemetry.addData("Mean", mean);
+            telemetry.addData("Std", std);
             if (Math.abs(leftHeight - mean) > std * 2
-                    && Math.abs(rightHeight - mean) > std * 2
-                    && ((leftHeight > mean && rightHeight < mean) 
-                        || (leftHeight < mean && rightHeight > mean)) {
-                //it is tilting away from the wall. Change motor speeds
+                    && Math.abs(rightHeight - mean) > std * 2) {
+                if (leftHeight > mean && rightHeight < mean){
+                    //going closer to the left of the screen
+                    //turn left regardless of the direction the robot is going in (forwards/backwards)
+                    telemetry.addData('Turn", "Left");
+                else if (leftHeight < mean && rightHeight > mean) {
+                    telemetry.addData("Turn", "Right);
+                } 
+                else {
+                    telemetry.addData("Turn", "None");
+                }
             }
         }
     }
