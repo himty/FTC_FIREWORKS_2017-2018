@@ -26,39 +26,31 @@ import static com.sun.tools.javac.util.Constants.format;
 
 //import org.firstinspires.ftc.robotcontroller.external.samples.HardwareTest;
 
-/**
- * Created by Queen on 10/30/16.
- */
 @Autonomous
 public class AutonomousBlueStraight extends LinearOpMode {
     HardwareTest robot = new HardwareTest();
     private ElapsedTime runtime = new ElapsedTime();
+    
+    //Encodes the robot's starting position to guide the
+    //robot throughout the autonomous program
+    final String TEAM_COLOR = "BLUE"; //can be RED or BLUE
+    final String TEAM_POSITION = "STRAIGHT"; //can be CURVED or STRAIGHT
 
-    double offsetTime = 0;
-
+    //Max is the bottom position for the jewel stick
+    //Min is the upper position for the jewel stick
+    //To make the stick move farther from the robot, raise this value
     final double JEWEL_STICK_MAX = 0.56;
-    //max is the bottom of the jewelstick
     final double JEWEL_STICK_MIN = 0.07;
-    //to make fartehr away, do higher
+    
+    //Multiplier to make the forward drivetrain
+    //movement direction equal a positive number
     final int DIRECTION = -1;
 
     /*
      * Vuforia variables
      */
     RelicRecoveryVuMark currentVuMark = RelicRecoveryVuMark.UNKNOWN;
-    OpenGLMatrix lastLocation = null;
     VuforiaLocalizerImplSubclass vuforia; //stores our instance of the Vuforia localization engine
-    File directory;
-    //    VuforiaTrackables beacons;
-    int fileCount = 1;
-
-    final String TEAM_COLOR = "BLUE"; //can be RED or BLUE
-    final String TEAM_POSITION = "STRAIGHT"; //can be CURVED or STRAIGHT
-
-    static final double FORWARD_SPEED = -1;
-    static final double TURN_SPEED = 1;
-    static final double POWER = 1;
-
     VuforiaTrackables relicTrackables;
     VuforiaTrackable relicTemplate;
 
@@ -86,20 +78,18 @@ public class AutonomousBlueStraight extends LinearOpMode {
         // Wait for the game to start (driver presses PLAY)
         waitForStart();
 
-
+        //Wait for the camera to boot
+        //This avoids getting null images
         while (runtime.seconds() < 6.5) {
-            //wait for the camera to boot
             idle();
         }
 
-
         relicTrackables.activate();
+        
         telemetry.addData("Status", "Running");
         telemetry.update();
 
-        //NEW ACCION
-        //robot clamps onto the block
-
+        //Clamp onto the block
         robot.clawLeft.setPosition(0.2);
         robot.clawRight.setPosition(0.7);
         runtime.reset();
@@ -107,6 +97,7 @@ public class AutonomousBlueStraight extends LinearOpMode {
             idle();
         }
 
+        //Lift the block so that it doesn't scrape the floor
         robot.linearSlide.setPower(1);
         runtime.reset();
         while (runtime.seconds() < 4) {
@@ -114,12 +105,17 @@ public class AutonomousBlueStraight extends LinearOpMode {
         }
         robot.linearSlide.setPower(0);
 
-        //do jewel sensing and move forwards/backwards
-        //update offsetTime
+        //Sense the placement of the jewels,
+        //knock off the correct jewel,
+        //move to the pictograph, and sense it
         doJewelSensing();
 
+        /*
+         *Move to the cryptobox.
+         *The current if/else structure allows for different robot ending positions
+         *when programming the robot to place the block in a certain column
+        */
         ///BLUE + STRAIGHT
-
         if (TEAM_COLOR.equals("BLUE") && TEAM_POSITION.equals("STRAIGHT")) {
             if (currentVuMark == RelicRecoveryVuMark.LEFT) {
                 telemetry.addData("VuMark", "Left");
@@ -136,11 +132,9 @@ public class AutonomousBlueStraight extends LinearOpMode {
                 telemetry.update();
                 move(0.3, 0.3, 2.4);// move based on unknown or vumark center
             }
-
-
         }
+        
         //BLUE + CURVED
-
         else if (TEAM_COLOR.equals("BLUE") && TEAM_POSITION.equals("CURVED")) {
             if (currentVuMark == RelicRecoveryVuMark.LEFT) {
                 telemetry.addData("VuMark", "Left");
@@ -163,8 +157,8 @@ public class AutonomousBlueStraight extends LinearOpMode {
                 move(0.3, -0.3, 1.3);
                 move(0.3, 0.3, 0.4);
             }
-
         }
+        
         //RED + STRAIGHT
         else if (TEAM_COLOR.equals("RED") && TEAM_POSITION.equals("STRAIGHT")) {
             if (currentVuMark == RelicRecoveryVuMark.LEFT) {
@@ -182,8 +176,8 @@ public class AutonomousBlueStraight extends LinearOpMode {
                 telemetry.update();
                 move(-0.3, -0.3, 2.4);// move based on unknown or vumark center
             }
-
         }
+        
         //RED + CURVED
         else if (TEAM_COLOR.equals("RED") && TEAM_POSITION.equals("CURVED")) {
             if (currentVuMark == RelicRecoveryVuMark.LEFT) {
@@ -207,9 +201,10 @@ public class AutonomousBlueStraight extends LinearOpMode {
                 move(0.3, -0.3, 1.3);
                 move(0.3, 0.3, 0.4);
             }
-
         }
 
+        //Lower the block, resetting the robot before
+        //tele-op mode.
         robot.linearSlide.setPower(-1);
         runtime.reset();
         while (runtime.seconds() < 4) {
@@ -220,25 +215,32 @@ public class AutonomousBlueStraight extends LinearOpMode {
 
     /**
      * Senses the position of each type of jewel (red or blue)
-     * and acts on it. (ALL OTHER ROBOT MOVEMENTS ARE STOPPED)
+     * and acts on it.
+     * 
+     * @precondition robot is centered on the jewel stand
+     * @postcondition robot has pushed off the correct jewel and is in front of the pictograph
      */
     private void doJewelSensing() {
         telemetry.addData("Starting", "Jewel Sensing" + runtime.seconds());
         telemetry.update();
+        
         if (vuforia.rgb != null) {
+            //Get bitmap through Vuforia
             Bitmap bm = Bitmap.createBitmap(vuforia.rgb.getWidth(), vuforia.rgb.getHeight(), Bitmap.Config.RGB_565);
             bm.copyPixelsFromBuffer(vuforia.rgb.getPixels());
+            
+            //Total the "amount" of red and blue on the left half of the screen
             double redAvgLeft = 0;
             double blueAvgLeft = 0;
             for (int y = 0; y < bm.getHeight(); y++) {
                 for (int x = bm.getWidth() * 1/2; x < bm.getWidth(); x++) {
                     int color = bm.getPixel(x, y);
-                    redAvgLeft += ((color & 0xff0000) >> 16) / 100.0;
+                    redAvgLeft += ((color & 0xff0000) >> 16) / 100.0; //divide by 100 to prevent overflow
                     blueAvgLeft += (color & 0xff) / 100.0;
                 }
-                //left side of image
             }
 
+            //Total the "amount" of red and blue on the right half of the screen
             double redAvgRight = 0;
             double blueAvgRight = 0;
             for (int y = 0; y < bm.getHeight(); y++) {
@@ -248,23 +250,25 @@ public class AutonomousBlueStraight extends LinearOpMode {
                     redAvgRight += ((color & 0xff0000) >> 16) / 100.0;
                     blueAvgRight += (color & 0xff) / 100.0;
                 }
-                //right side of image
             }
 
-            int numPixels = bm.getHeight() * bm.getWidth() / 4;
+            int numPixels = bm.getHeight() * bm.getWidth() / 2;
 
             redAvgLeft /= numPixels;
             blueAvgLeft /= numPixels;
             redAvgRight /= numPixels;
             blueAvgRight /= numPixels;
 
+            //Positive certaintyForRed corresponds to red probably being on the left half of the screen
+            //A higher magnitude indicates a higher probability of being correct
             double certaintyForRed = (redAvgLeft - redAvgRight) - (blueAvgLeft - blueAvgRight);
 
-            //moving forwards 1 sec
+            //Robot will move for 0.6 seconds in a direction determined in the following if/else block
             double movementTime = 0.6;
             double drivePower = 0;
 
-            robot.jewelStick.setPosition(JEWEL_STICK_MAX); //put the jewel stick down
+            //Put the jewel stick down. Get ready to push a jewel off the stand
+            robot.jewelStick.setPosition(JEWEL_STICK_MAX); 
             runtime.reset();
             while (runtime.seconds() < 1.1) {
                 idle();
@@ -273,40 +277,39 @@ public class AutonomousBlueStraight extends LinearOpMode {
             if (certaintyForRed > 0) {
                 //red is probably on the left
 
-                //for BLUE team, the robot should go right, which is forwards
-                //for RED team, the robot should go left, which is also forwards
+                //for RED team, the robot should go towards the right of the screen, which is forwards
+                //for BLUE team, the robot should go towards the left of the screen, which is backwards
                 if (TEAM_COLOR.equals("RED")) {
                     drivePower = 0.2;
-                    offsetTime = movementTime * -1;
                 }
                 else if (TEAM_COLOR.equals("BLUE")) {
                     drivePower = -0.2;
-                    offsetTime = movementTime;
                 }
             }
             else {
                 //red is probably on the right
 
-                //for BLUE team, the robot should go left, which is backwards
-                //for RED team, the robot should go right, which is also backwards
+                //for RED team, the robot should go towards the left of the screen, which is backwards
+                //for BLUE team, the robot should go towards the right of the screen, which is forwards
                 if (TEAM_COLOR.equals("RED")) {
                     drivePower = -0.2;
-                    offsetTime = movementTime;
                 }
                 else if (TEAM_COLOR.equals("BLUE")) {
                     drivePower = 0.2;
-                    offsetTime = movementTime * -1;
                 }
             }
 
+            //Knock off the jewel
             move(drivePower, drivePower, movementTime);
 
+            //Stop for some time to stabilize the robot.
             move(0, 0, 1);
 
-            robot.jewelStick.setPosition(JEWEL_STICK_MIN); // put the jewel stick down
+            //Lift the jewel stick to its starting position
+            robot.jewelStick.setPosition(JEWEL_STICK_MIN);
 
-            //go back to beginning position
-            //multiply power by -1 to go reverse
+            //Go to the pictograph if the robot has to 
+            //and sense the pictograph.
             if (drivePower < 0) {
                 doVuMark();
             }
@@ -315,13 +318,13 @@ public class AutonomousBlueStraight extends LinearOpMode {
                 move(drivePower, drivePower, movementTime * 2);
                 doVuMark();
             }
-
-
-            move(0,0, 0);
         }
-
     }
 
+    /**
+     * Checks if a VuMark (pictograph) is visible and store its value in currentVuMark
+     * if one is.
+     */
     private void doVuMark() {
         /**
          * See if any of the instances of {@link relicTemplate} are currently visible.
@@ -334,7 +337,7 @@ public class AutonomousBlueStraight extends LinearOpMode {
             //some VuMark is visible
             currentVuMark = vuMark;
 
-            // make the robot go parallel to the wall
+            // TODO: Make the robot go parallel to the wall based on pose transformations
 
             /* For fun, we also exhibit the navigational pose. In the Relic Recovery game,
              * it is perhaps unlikely that you will actually need to act on this pose information, but
@@ -382,10 +385,9 @@ public class AutonomousBlueStraight extends LinearOpMode {
 
     /**
      * Initializes the Vuforia engine
-     * @return whether initialization was successful
      */
     private void initVuforia() {
-        //uncomment this to show what the camera sees
+        //Uncomment this to show what the camera sees
         VuforiaLocalizer.Parameters params = new VuforiaLocalizer.Parameters(R.id.cameraMonitorViewId);
 
         //uncomment this to not show what the camera sees (save battery)
@@ -397,6 +399,9 @@ public class AutonomousBlueStraight extends LinearOpMode {
         vuforia = new VuforiaLocalizerImplSubclass(params);
     }
 
+    /**
+     * Initializes the VuMark sensing. Requires a relicTrackables.activate() later in the program
+     */
     private void initVuMark() {
         /**
          * Load the data set containing the VuMarks for Relic Recovery. There's only one trackable
@@ -409,6 +414,11 @@ public class AutonomousBlueStraight extends LinearOpMode {
         relicTemplate.setName("relicVuMarkTemplate"); // can help in debugging; otherwise not necessary
     }
 
+    /**
+     * Helper method to decrease code in this class.
+     * Fixes the direction of travel, sets the motor powers, waits the
+     * designated time, and stops the robot.
+     */
     private void move(double leftPower, double rightPower, double time) {
         leftPower *= DIRECTION;
         rightPower *= DIRECTION;
