@@ -30,7 +30,7 @@ import static com.sun.tools.javac.util.Constants.format;
  * Created by Queen on 10/30/16.
  */
 @Autonomous
-public class Autonomous2017 extends LinearOpMode {
+public class AutonomousBlueStraight extends LinearOpMode {
     HardwareTest robot = new HardwareTest();
     private ElapsedTime runtime = new ElapsedTime();
 
@@ -40,6 +40,7 @@ public class Autonomous2017 extends LinearOpMode {
     //max is the bottom of the jewelstick
     final double JEWEL_STICK_MIN = 0.07;
     //to make fartehr away, do higher
+    final int DIRECTION = -1;
 
     /*
      * Vuforia variables
@@ -51,7 +52,8 @@ public class Autonomous2017 extends LinearOpMode {
     //    VuforiaTrackables beacons;
     int fileCount = 1;
 
-    final String TEAM_COLOR = "BLUE";
+    final String TEAM_COLOR = "BLUE"; //can be RED or BLUE
+    final String TEAM_POSITION = "STRAIGHT"; //can be CURVED or STRAIGHT
 
     static final double FORWARD_SPEED = -1;
     static final double TURN_SPEED = 1;
@@ -59,7 +61,6 @@ public class Autonomous2017 extends LinearOpMode {
 
     VuforiaTrackables relicTrackables;
     VuforiaTrackable relicTemplate;
-
 
 
     public void runOpMode() throws InterruptedException {
@@ -99,64 +100,122 @@ public class Autonomous2017 extends LinearOpMode {
         //NEW ACCION
         //robot clamps onto the block
 
-        robot.clawLeft.setPosition(0.7);
-        robot.clawRight.setPosition(0.2);
+        robot.clawLeft.setPosition(0.2);
+        robot.clawRight.setPosition(0.7);
         runtime.reset();
         while (runtime.seconds() < 1) {
             idle();
         }
 
-
-        setDrivePowers(-0.3, -0.3);
+        robot.linearSlide.setPower(1);
         runtime.reset();
-        while(runtime.seconds() < 0.3) {
+        while (runtime.seconds() < 4) {
             idle();
         }
-
-
-        setDrivePowers(0.3, -0.3);
-        runtime.reset();
-        while(runtime.seconds() < 0.3) {
-            idle();
-        }
-
-        setDrivePowers(0.2, 0.2);
-        runtime.reset();
-        while(runtime.seconds() < 1 && currentVuMark != RelicRecoveryVuMark.UNKNOWN) {
-            doVuMark();
-        }
+        robot.linearSlide.setPower(0);
 
         //do jewel sensing and move forwards/backwards
         //update offsetTime
         doJewelSensing();
 
-/*
-       //move to middle of the pot(aka platform)
-        setDrivePowers(0.3, 0.3);
-        runtime.reset();
-        while (runtime.seconds() < 2) {
-            idle();
-        }*/
-/*
-        setDrivePowers(FORWARD_SPEED, FORWARD_SPEED);
-        while (runtime.seconds() < 5) {
-        }
-        runtime.reset();
-*/
+        ///BLUE + STRAIGHT
 
-//        //go to the VuMark
-//        runtime.reset();
-//        //make this condition based off of when the pose's x is near 0 or something
-//        while(currentVuMark != RelicRecoveryVuMark.UNKNOWN
-//                && runtime.seconds() < 2 + offsetTime) {
-//            doVuMark();
-//        }
-//        //go to the box thing
-//        runtime.reset();
-//        while(currentVuMark != RelicRecoveryVuMark.UNKNOWN
-//                && runtime.seconds() < 2) {
-//            doVuMark();
-//        }
+        if (TEAM_COLOR.equals("BLUE") && TEAM_POSITION.equals("STRAIGHT")) {
+            if (currentVuMark == RelicRecoveryVuMark.LEFT) {
+                telemetry.addData("VuMark", "Left");
+                telemetry.update();
+                move(0.3, 0.3, 2.4);
+            }
+            else if (currentVuMark == RelicRecoveryVuMark.RIGHT) {
+                telemetry.addData("VuMark", "RIGHT");
+                telemetry.update();
+                move(0.3, 0.3, 2.4);
+            }
+            else {
+                telemetry.addData("VuMark", "Center");
+                telemetry.update();
+                move(0.3, 0.3, 2.4);// move based on unknown or vumark center
+            }
+
+
+        }
+        //BLUE + CURVED
+
+        else if (TEAM_COLOR.equals("BLUE") && TEAM_POSITION.equals("CURVED")) {
+            if (currentVuMark == RelicRecoveryVuMark.LEFT) {
+                telemetry.addData("VuMark", "Left");
+                telemetry.update();
+                move(0.3, 0.3, 1.1);
+                move(0.3, -0.3, 1.3);
+                move(0.3, 0.3, 0.4);
+            }
+            else if (currentVuMark == RelicRecoveryVuMark.RIGHT) {
+                telemetry.addData("VuMark", "RIGHT");
+                telemetry.update();
+                move(0.3, 0.3, 1.1);
+                move(0.3, -0.3, 1.3);
+                move(0.3, 0.3, 0.4);
+            }
+            else {
+                telemetry.addData("VuMark", "Center");
+                telemetry.update();
+                move(0.3, 0.3, 1.1);
+                move(0.3, -0.3, 1.3);
+                move(0.3, 0.3, 0.4);
+            }
+
+        }
+        //RED + STRAIGHT
+        else if (TEAM_COLOR.equals("RED") && TEAM_POSITION.equals("STRAIGHT")) {
+            if (currentVuMark == RelicRecoveryVuMark.LEFT) {
+                telemetry.addData("VuMark", "Left");
+                telemetry.update();
+                move(-0.3, -0.3, 2.4);
+            }
+            else if (currentVuMark == RelicRecoveryVuMark.RIGHT) {
+                telemetry.addData("VuMark", "RIGHT");
+                telemetry.update();
+                move(-0.3, -0.3, 2.4);
+            }
+            else {
+                telemetry.addData("VuMark", "Center");
+                telemetry.update();
+                move(-0.3, -0.3, 2.4);// move based on unknown or vumark center
+            }
+
+        }
+        //RED + CURVED
+        else if (TEAM_COLOR.equals("RED") && TEAM_POSITION.equals("CURVED")) {
+            if (currentVuMark == RelicRecoveryVuMark.LEFT) {
+                telemetry.addData("VuMark", "Left");
+                telemetry.update();
+                move(-0.3, -0.3, 1.1);
+                move(0.3, -0.3, 1.3);
+                move(0.3, 0.3, 0.4);
+            }
+            else if (currentVuMark == RelicRecoveryVuMark.RIGHT) {
+                telemetry.addData("VuMark", "RIGHT");
+                telemetry.update();
+                move(-0.3, -0.3, 1.1);
+                move(0.3, -0.3, 1.3);
+                move(0.3, 0.3, 0.4);
+            }
+            else {
+                telemetry.addData("VuMark", "Center");
+                telemetry.update();
+                move(-0.3, -0.3, 1.1);
+                move(0.3, -0.3, 1.3);
+                move(0.3, 0.3, 0.4);
+            }
+
+        }
+
+        robot.linearSlide.setPower(-1);
+        runtime.reset();
+        while (runtime.seconds() < 4) {
+            idle();
+        }
+        robot.linearSlide.setPower(0);
     }
 
     /**
@@ -172,22 +231,24 @@ public class Autonomous2017 extends LinearOpMode {
             double redAvgLeft = 0;
             double blueAvgLeft = 0;
             for (int y = 0; y < bm.getHeight(); y++) {
-                for (int x = bm.getWidth() * 2/3; x < bm.getWidth(); x++) {
+                for (int x = bm.getWidth() * 1/2; x < bm.getWidth(); x++) {
                     int color = bm.getPixel(x, y);
                     redAvgLeft += ((color & 0xff0000) >> 16) / 100.0;
                     blueAvgLeft += (color & 0xff) / 100.0;
                 }
+                //left side of image
             }
 
             double redAvgRight = 0;
             double blueAvgRight = 0;
             for (int y = 0; y < bm.getHeight(); y++) {
-                for (int x = bm.getWidth() * 1/3; x < bm.getWidth() *2/3; x++) {
+                for (int x = 0; x < bm.getWidth() * 1/2; x++) {
                     int color = bm.getPixel(x, y);
 
                     redAvgRight += ((color & 0xff0000) >> 16) / 100.0;
                     blueAvgRight += (color & 0xff) / 100.0;
                 }
+                //right side of image
             }
 
             int numPixels = bm.getHeight() * bm.getWidth() / 4;
@@ -200,8 +261,8 @@ public class Autonomous2017 extends LinearOpMode {
             double certaintyForRed = (redAvgLeft - redAvgRight) - (blueAvgLeft - blueAvgRight);
 
             //moving forwards 1 sec
-            double movementTime = 0.7;
-            double drivePower;
+            double movementTime = 0.6;
+            double drivePower = 0;
 
             robot.jewelStick.setPosition(JEWEL_STICK_MAX); //put the jewel stick down
             runtime.reset();
@@ -214,41 +275,49 @@ public class Autonomous2017 extends LinearOpMode {
 
                 //for BLUE team, the robot should go right, which is forwards
                 //for RED team, the robot should go left, which is also forwards
-                drivePower = 0.2;
-                setDrivePowers(drivePower, drivePower);
-                offsetTime = movementTime * -1;
+                if (TEAM_COLOR.equals("RED")) {
+                    drivePower = 0.2;
+                    offsetTime = movementTime * -1;
+                }
+                else if (TEAM_COLOR.equals("BLUE")) {
+                    drivePower = -0.2;
+                    offsetTime = movementTime;
+                }
             }
             else {
                 //red is probably on the right
 
                 //for BLUE team, the robot should go left, which is backwards
                 //for RED team, the robot should go right, which is also backwards
-                drivePower = -0.2;
-                setDrivePowers(drivePower, drivePower);
-                offsetTime = movementTime;
+                if (TEAM_COLOR.equals("RED")) {
+                    drivePower = -0.2;
+                    offsetTime = movementTime;
+                }
+                else if (TEAM_COLOR.equals("BLUE")) {
+                    drivePower = 0.2;
+                    offsetTime = movementTime * -1;
+                }
             }
 
-            runtime.reset();
-            while (runtime.seconds() < movementTime) {
-                idle();
-            }
+            move(drivePower, drivePower, movementTime);
 
-            setDrivePowers(0, 0);
-            runtime.reset();
-            while(runtime.seconds() < 1) {
-                idle();
-            }
+            move(0, 0, 1);
+
+            robot.jewelStick.setPosition(JEWEL_STICK_MIN); // put the jewel stick down
 
             //go back to beginning position
             //multiply power by -1 to go reverse
-            drivePower *= -1;
-            setDrivePowers(drivePower, drivePower);
-            runtime.reset();
-            while (runtime.seconds() < movementTime) {
-                idle();
+            if (drivePower < 0) {
+                doVuMark();
+            }
+            else {
+                drivePower *= -1;
+                move(drivePower, drivePower, movementTime * 2);
+                doVuMark();
             }
 
-            setDrivePowers(0, 0);
+
+            move(0,0, 0);
         }
 
     }
@@ -340,10 +409,28 @@ public class Autonomous2017 extends LinearOpMode {
         relicTemplate.setName("relicVuMarkTemplate"); // can help in debugging; otherwise not necessary
     }
 
-    private void setDrivePowers(double leftPower, double rightPower) {
+    private void move(double leftPower, double rightPower, double time) {
+        leftPower *= DIRECTION;
+        rightPower *= DIRECTION;
+
         robot.frontleftMotor.setPower(leftPower);
         robot.backleftMotor.setPower(leftPower);
         robot.frontrightMotor.setPower(rightPower);
         robot.backrightMotor.setPower(rightPower);
+
+        runtime.reset();
+        while(runtime.seconds() < time) {
+            idle();
+        }
+
+        robot.frontleftMotor.setPower(0);
+        robot.frontrightMotor.setPower(0);
+        robot.backleftMotor.setPower(0);
+        robot.backrightMotor.setPower(0);
+
+        runtime.reset();
+        while(runtime.seconds() < 0.5) {
+            idle();
+        }
     }
 }
