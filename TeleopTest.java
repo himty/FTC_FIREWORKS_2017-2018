@@ -1,29 +1,9 @@
 package org.firstinspires.ftc.teamcode;
 
-import android.content.Context;
-import android.graphics.Bitmap;
-import android.hardware.Sensor;
-import android.hardware.SensorEvent;
-import android.hardware.SensorEventListener;
-import android.hardware.SensorManager;
-
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.util.ElapsedTime;
-
-import org.firstinspires.ftc.robotcore.external.matrices.OpenGLMatrix;
-import org.firstinspires.ftc.robotcore.external.matrices.VectorF;
-import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
-import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
-import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
-import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
-import org.firstinspires.ftc.robotcore.external.navigation.RelicRecoveryVuMark;
-import org.firstinspires.ftc.robotcore.external.navigation.VuMarkInstanceId;
-import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackable;
-import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackableDefaultListener;
-import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackables;
-
-import static com.sun.tools.javac.util.Constants.format;
 
 @TeleOp(name="TeleopTest", group="FIREWORKS")
 public class TeleopTest extends LinearOpMode {
@@ -38,12 +18,14 @@ public class TeleopTest extends LinearOpMode {
     double targetLeftPower;
     double targetRightPower;
 
-    boolean isClamping = false;
+    //Max is the bottom position for the jewel stick
+    //Min is the upper position for the jewel stick
+    //To make the stick move farther from the robot, raise this value
+    final double JEWEL_STICK_MAX = 0.56;
+    final double JEWEL_STICK_MIN = 0.07;
 
-    VuforiaLocalizerImplSubclass vuforia; //stores our instance of the Vuforia localization engine
-
-
-    double INIT_COMPASS_VALUE;
+    //stores our instance of the Vuforia localization engine
+    VuforiaLocalizerImplSubclass vuforia;
 
     @Override
     public void runOpMode(){
@@ -51,6 +33,12 @@ public class TeleopTest extends LinearOpMode {
          * The init() method of the hardware class does all the work here
          */
         robot.init(hardwareMap);
+
+        //Make sure robot does not implement encoder
+        robot.frontleftMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        robot.frontrightMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        robot.backleftMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        robot.backrightMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
         // Send telemetry message to signify robot waiting;
         telemetry.addData("Say", "Hello Driver");    //
@@ -65,11 +53,14 @@ public class TeleopTest extends LinearOpMode {
             doClamping();
             doLinearSlide();
             RollOutArm();
+            doJewelHitter();
 
             telemetry.addData("hi", "hello");
-            //telemetry.addData("Accelerometer", robot.accelSensor.toString());
             telemetry.addData("servoleft", robot.clawLeft.getPosition());
             telemetry.addData("servoright", robot.clawRight.getPosition());
+            telemetry.addData("Jewel Stick", robot.jewelStick.getPosition());
+
+            // Send telemetry message to signify robot waiting
             telemetry.update();
 
             // Pause for metronome tick.  40 mS each cycle = update 25 times a second.
@@ -81,107 +72,69 @@ public class TeleopTest extends LinearOpMode {
      * Makes the robot's drive train move
      */
     private void doDriveTrain() {
-        //calculate motor powers
-        targetLeftPower = (gamepad1.right_stick_y - 2*gamepad1.right_stick_x);
-        targetRightPower = (gamepad1.right_stick_y + 2 * gamepad1.right_stick_x);
+        //Defining which buttons on joystick corresponds to motor left and right power
+        //Calculate left and right motor drivetrain power
+        targetLeftPower = (gamepad1.right_stick_y - gamepad1.right_stick_x *2);
+        targetRightPower = (gamepad1.right_stick_y + gamepad1.right_stick_x * 2);
 
-        if (targetLeftPower < 0 && targetRightPower > 0) {
-            targetRightPower = targetRightPower * 0.5;
-        }
-
-        if (gamepad1.right_bumper){
+        //If bumper on joystick is not pressed, decrease motor power
+        if (!gamepad1.right_bumper){
             targetLeftPower /= 5;
             targetRightPower /= 5;
         }
 
-        //set powers
-//            targetLeftPower = scaleInput(Range.clip(targetLeftPower, -1, 1));
-//            targetRightPower = scaleInput(Range.clip(targetLeftPower, -1, 1));
+        //Set powers
         robot.frontleftMotor.setPower(targetLeftPower);
         robot.backleftMotor.setPower(targetLeftPower);
         robot.frontrightMotor.setPower(targetRightPower);
         robot.backrightMotor.setPower(targetRightPower);
     }
 
+
     private void doClamping() {
         if (gamepad1.dpad_up) {
             //make claws clamp onto the object
+            //0.7 and 0.2 is range of values
             robot.clawLeft.setPosition(0.7);
             robot.clawRight.setPosition(0.2);
-            isClamping = true;
         } else if (gamepad1.dpad_down) {
             //make claws release the object
             robot.clawLeft.setPosition(0.2);
             robot.clawRight.setPosition(0.7);
-            isClamping = false;
-        } else {
-            //make claws hang loose if there is nothing to do
+        }
+        else {
+            //Make claws hang loose if there is nothing to do
             robot.clawLeft.setPosition(0.5);
             robot.clawRight.setPosition(0.5);
         }
     }
 
+    /**
+     * Linear slide moves up and down based on pressing the right joystick
+     */
     private void doLinearSlide() {
-        robot.linearSlide.setPower(gamepad2.right_stick_y);
+        robot.linearSlide.setPower(gamepad2.right_stick_y * -1);
     }
 
+    /**
+     * Horizontal lift comes out by pressing left joystick
+     */
     private void RollOutArm() {
         robot.RollArm.setPower(gamepad2.left_stick_y);
-
-        //robot.linearSlide.setPower(-1 * gamepad2.right_stick_y);
     }
 
-
+    /**
+     * The Jewel Stick hits one of the balls based on the team color
+     * This method lowers and raises the stick
+     * Jewel Stick travels in Increments of 0.15 (speed)
+     */
     private void doJewelHitter() {
-        //TODO: How does the robot put the stick down and up?
-        if (gamepad1.left_stick_y > 10) {
-            robot.jewelStick.setPosition(robot.jewelStick.getPosition() + 0.01);
+        double currPosition = robot.jewelStick.getPosition();
+        if (gamepad2.dpad_down) {
+            robot.jewelStick.setPosition(Math.min(currPosition + 0.15, JEWEL_STICK_MAX));
         }
-        if (gamepad1.left_stick_y < -10) {
-            robot.jewelStick.setPosition(robot.jewelStick.getPosition() - 0.01);
+        if (gamepad2.dpad_up) {
+            robot.jewelStick.setPosition(Math.max(currPosition - 0.15, JEWEL_STICK_MIN));
         }
-
-        telemetry.addData("Jewel Hitter", robot.jewelStick.getPosition());
-    }
-
-    double scaleInput(double dVal)  {
-        double[] scaleArray = { 0.0, 0.05, 0.09, 0.10, 0.12, 0.15, 0.18, 0.24,
-                0.30, 0.36, 0.43, 0.50, 0.60, 0.72, 0.85, 1.00, 1.00 };
-
-        // get the corresponding index for the scaleInput array.
-        int index = (int) ((dVal/MAX_JOYSTICK_VALUE) * 16.0); //number is now <= 1
-
-        // index should be positive.
-        if (index < 0) {
-            index = -index;
-        }
-
-        // index cannot exceed size of array minus 1.
-        if (index > 16) {
-            index = 16;
-        }
-
-        // get value from the array.
-        double dScale = 0.0;
-        if (dVal < 0) {
-            dScale = -scaleArray[index];
-        } else {
-            dScale = scaleArray[index];
-        }
-
-        // return scaled value.
-        return dScale;
     }
 }
-
-//random thing for future reference
-//    for (VuforiaTrackable beac : beacons) {
-//        OpenGLMatrix pose = ((VuforiaTrackableDefaultListener) beac.getListener()).getRawPose();
-//
-//        if (pose != null) {
-//            VectorF translation = pose.getTranslation();
-//            telemetry.addData(beac.getName() + " - Translation", translation);
-//            double radiansToTurn = Math.toDegrees(Math.atan2(translation.get(1), translation.get(2)));
-//            telemetry.addData(beac.getName() + " - Degrees", radiansToTurn);
-//        }
-//    }
