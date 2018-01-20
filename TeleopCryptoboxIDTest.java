@@ -82,15 +82,15 @@ public class TeleopJewelIDTest extends LinearOpMode {
             final double multiplierInit = 1.02;
             double multiplier = multiplerInit;
 
-            double redSum = 0;
-            double blueSum = 0;
+            double redSumMultiplied = 0;
+            double redSumBase = 0;
             for (int y = 0; y < bm.getHeight(); y++) {
                 for (int x = bm.getWidth() / 2; x < bm.getWidth(); x++) {
                     int color = bm.getPixel(x, y);
                     int red = ((color & 0xff0000) >> 16) / 100.0;
                     int blue = (color & 0xff) / 100.0;
                     
-                    if (red * 0.5 > blue) {
+                    if (red > 100 && red * 0.5 > blue) {
                         if (multiplier > multiplierInit) {
                             multiplier *= multiplierInit;
                         }
@@ -98,7 +98,7 @@ public class TeleopJewelIDTest extends LinearOpMode {
                             multipler = multiplierInit;
                         }
                     }
-                    else if (blue * 0.5 > red) {
+                    else if (red > 100 && blue * 0.5 > red) {
                         if (multiplier > multiplierInit) {
                             multiplier = multiplierInit;
                         }
@@ -109,8 +109,8 @@ public class TeleopJewelIDTest extends LinearOpMode {
                     
                     //For _multiplier_ variable: The longer the chain of consecutive
                     //red pixels, the more weight we give the red and less the blue
-                    redSum += ((color & 0xff0000) >> 16) / 100.0 * multiplier;
-                    blueSum += (color & 0xff) / 100.0;
+                    redSumMultiplied += red * multiplier;
+                    redSumBase += red;
                 }
             }
 
@@ -139,32 +139,26 @@ public class TeleopJewelIDTest extends LinearOpMode {
                     
                     //For _multiplier_ variable: The longer the chain of consecutive
                     //red pixels, the more weight we give the red and less the blue
-                    redSum -= ((color & 0xff0000) >> 16) / 100.0 * multiplier;
-                    blueSum -= (color & 0xff) / 100.0;
+                    redSumMultiplied -= red * multiplier;
+                    redSumBase -= red;
                 }
             }
 
-            double certaintyForRed = redSum - blueSum;
+            double certaintyForCrypto = redSumMultiplied - redSumBase;
             double movementStartTime = robotTime.milliseconds();
-            if (certaintyForRed > 0) {
-                //red is probably on the left
-                //TODO: start motor movement
-                while (robotTime.milliseconds() < movementStartTime + 2000) {
-                    telemetry.addData("Red is on", "left");
-                    telemetry.addData("Red", redSum);
-                    telemetry.addData("Blue", blueSum);
+            if (certaintyForCrypto > 0) {
+                //Crypobox is probably present
+//                 while (robotTime.milliseconds() < movementStartTime + 2000) {
+                    telemetry.addData("Cryptobox", "is present");
                     telemetry.update();
-                }
+//                 }
             }
             else {
-                //red is probably on the right
-                //TODO: start motor movement
-                while (robotTime.milliseconds() < movementStartTime + 2000) {
-                    telemetry.addData("Red is on", "right");
-                    telemetry.addData("Red", redSum);
-                    telemetry.addData("Blue", blueSum);
+                //Cryptobox is probably not present
+//                 while (robotTime.milliseconds() < movementStartTime + 2000) {
+                    telemetry.addData("Cryptobox", "is not present");
                     telemetry.update();
-                }
+//                 }
             }
         }
     }
