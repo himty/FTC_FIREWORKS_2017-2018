@@ -82,8 +82,8 @@ public class TeleopJewelIDTest extends LinearOpMode {
             final double multiplierInit = 1.02;
             double multiplier = multiplerInit;
 
-            double redAvg = 0;
-            double blueAvg = 0;
+            double redSum = 0;
+            double blueSum = 0;
             for (int y = 0; y < bm.getHeight(); y++) {
                 for (int x = bm.getWidth() / 2; x < bm.getWidth(); x++) {
                     int color = bm.getPixel(x, y);
@@ -109,8 +109,8 @@ public class TeleopJewelIDTest extends LinearOpMode {
                     
                     //For _multiplier_ variable: The longer the chain of consecutive
                     //red pixels, the more weight we give the red and less the blue
-                    redAvg += ((color & 0xff0000) >> 16) / 100.0 * multiplier;
-                    blueAvg += (color & 0xff) / 100.0 / multiplier;
+                    redSum += ((color & 0xff0000) >> 16) / 100.0 * multiplier;
+                    blueSum += (color & 0xff) / 100.0;
                 }
             }
 
@@ -139,27 +139,20 @@ public class TeleopJewelIDTest extends LinearOpMode {
                     
                     //For _multiplier_ variable: The longer the chain of consecutive
                     //red pixels, the more weight we give the red and less the blue
-                    redAvg -= ((color & 0xff0000) >> 16) / 100.0 * multiplier;
-                    blueAvg -= (color & 0xff) / 100.0 / multiplier;
+                    redSum -= ((color & 0xff0000) >> 16) / 100.0 * multiplier;
+                    blueSum -= (color & 0xff) / 100.0;
                 }
             }
 
-            int numPixels = bm.getHeight() * bm.getWidth() / 4;
-
-            redAvgLeft /= numPixels;
-            blueAvgLeft /= numPixels;
-            redAvgRight /= numPixels;
-            blueAvgRight /= numPixels;
-
-            double certaintyForRed = redAvg - blueAvg;
+            double certaintyForRed = redSum - blueSum;
             double movementStartTime = robotTime.milliseconds();
             if (certaintyForRed > 0) {
                 //red is probably on the left
                 //TODO: start motor movement
                 while (robotTime.milliseconds() < movementStartTime + 2000) {
                     telemetry.addData("Red is on", "left");
-                    telemetry.addData("Red", redAvgLeft + " " + redAvgRight);
-                    telemetry.addData("Blue", blueAvgLeft + " " + blueAvgRight);
+                    telemetry.addData("Red", redSum);
+                    telemetry.addData("Blue", blueSum);
                     telemetry.update();
                 }
             }
@@ -168,8 +161,8 @@ public class TeleopJewelIDTest extends LinearOpMode {
                 //TODO: start motor movement
                 while (robotTime.milliseconds() < movementStartTime + 2000) {
                     telemetry.addData("Red is on", "right");
-                    telemetry.addData("Red", redAvgLeft + " " + redAvgRight);
-                    telemetry.addData("Blue", blueAvgLeft + " " + blueAvgRight);
+                    telemetry.addData("Red", redSum);
+                    telemetry.addData("Blue", blueSum);
                     telemetry.update();
                 }
             }
