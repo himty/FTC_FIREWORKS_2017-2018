@@ -4,4 +4,4 @@ This is the repository for the FTC team FIREWORKS. If you are a team member, hel
 
 ## Note:
 
-Our robot uses the LinearOpMode template, so all the updated files (HardwareTest, AutonomousTest, and TeleopTest) are needed to run the full program.
+Our robot uses the LinearOpMode template, so all the updated files (HardwareTest, AutonomousTest, and TeleopTest) are needed to run the full program. Classes dependent on the Vuforia platform, such as the autonomous classes, VuMarkIdentificationTest, and TeleopJewelIDTest, require the VuforiaLocalizerImplSubclass file to run in addition to the above.
