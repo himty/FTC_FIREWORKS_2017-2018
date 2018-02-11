@@ -54,15 +54,16 @@ public class TeleopTest extends LinearOpMode {
         // run until the end of the match (driver presses STOP)
         while (opModeIsActive()) {
             doDriveTrain();
-            doClamping();
+//            doClamping();
 //            doLinearSlide();
 //            RollOutArm();
             doJewelHitter();
+            doRampCollector();
 
             telemetry.addData("hi", "hello");
-            telemetry.addData("servoleft", robot.clawLeft.getPosition());
-            telemetry.addData("servoright", robot.clawRight.getPosition());
-            telemetry.addData("Jewel Stick", robot.jewelStick.getPosition());
+//            telemetry.addData("servoleft", robot.clawLeft.getPosition());
+//            telemetry.addData("servoright", robot.clawRight.getPosition());
+//            telemetry.addData("Jewel Stick", robot.jewelStick.getPosition());
 
             telemetry.addData("frontLeft", robot.frontleftMotor.getPower());
             telemetry.addData("frontRight", robot.frontrightMotor.getPower());
@@ -118,33 +119,33 @@ public class TeleopTest extends LinearOpMode {
 //        }
 
         //Set powers
-       robot.frontleftMotor.setPower(v1);
-       robot.frontrightMotor.setPower(v2);
-       robot.backleftMotor.setPower(v3);
-       robot.backrightMotor.setPower(v4);
+        robot.frontleftMotor.setPower(v1);
+        robot.frontrightMotor.setPower(v2);
+        robot.backleftMotor.setPower(v3);
+        robot.backrightMotor.setPower(v4);
     }
 
     private void doClamping() {
-        if (gamepad1.dpad_up) {
-            //make claws clamp onto the object
-            //0.7 and 0.2 is range of values
-            robot.clawLeft.setPosition(0.7);
-            robot.clawRight.setPosition(0.2);
-        }
-        if (gamepad1.dpad_down) {
-            //make claws release the object
-            robot.clawLeft.setPosition(0.2);
-            robot.clawRight.setPosition(0.7);
-
-            prevDPadDownState = true;
-        }
-        else {
-            if (prevDPadDownState == true) {
-                robot.clawLeft.setPosition(0.5);
-                robot.clawRight.setPosition(0.5);
-            }
-            prevDPadDownState = false;
-        }
+//        if (gamepad1.dpad_up) {
+//            //make claws clamp onto the object
+//            //0.7 and 0.2 is range of values
+//            robot.clawLeft.setPosition(0.7);
+//            robot.clawRight.setPosition(0.2);
+//        }
+//        if (gamepad1.dpad_down) {
+//            //make claws release the object
+//            robot.clawLeft.setPosition(0.2);
+//            robot.clawRight.setPosition(0.7);
+//
+//            prevDPadDownState = true;
+//        }
+//        else {
+//            if (prevDPadDownState == true) {
+//                robot.clawLeft.setPosition(0.5);
+//                robot.clawRight.setPosition(0.5);
+//            }
+//            prevDPadDownState = false;
+//        }
     }
 
     /**
@@ -175,21 +176,25 @@ public class TeleopTest extends LinearOpMode {
 //            robot.jewelStick.setPosition(Math.max(currPosition - 0.15, JEWEL_STICK_MIN));
 //        }
 //    }
+    private void doRampCollector() {
+        robot.rampLeft.setPower(gamepad2.left_stick_y);
+        robot.rampRight.setPower(gamepad2.left_stick_y);
+    }
 
     private void doJewelHitter() {
-        //double currPosition = robot.jewelStick.getPosition();
-        if (gamepad2.dpad_down) {
-            //make jewelstick go down
-            robot.jewelStick.setPosition(JEWEL_STICK_MAX);
-
-        } else if (gamepad2.dpad_up) {
-            //make jewelstick go up
-            robot.jewelStick.setPosition(JEWEL_STICK_MIN);
-        }
-        else {
-            //Make jewel stick hang loose if there is nothing to do
-            robot.jewelStick.setPosition(0.01);
-        }
+//        //double currPosition = robot.jewelStick.getPosition();
+//        if (gamepad2.dpad_down) {
+//            //make jewelstick go down
+//            robot.jewelStick.setPosition(JEWEL_STICK_MAX);
+//
+//        } else if (gamepad2.dpad_up) {
+//            //make jewelstick go up
+//            robot.jewelStick.setPosition(JEWEL_STICK_MIN);
+//        }
+//        else {
+//            //Make jewel stick hang loose if there is nothing to do
+//            robot.jewelStick.setPosition(0.01);
+//        }
 
     }
 }
