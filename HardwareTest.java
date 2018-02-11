@@ -15,13 +15,16 @@ public class HardwareTest
     public DcMotor  frontrightMotor  = null;
     public DcMotor  backleftMotor = null;
     public DcMotor  backrightMotor = null;
-    public DcMotor  linearSlide = null;
+//    public DcMotor  linearSlide = null;
     public Servo    clawLeft = null;
     public Servo    clawRight = null;
 
+//    public DcMotor blockCollectorLeft = null;
+//    public DcMotor blockCollectorRight = null;
+
     public Servo    jewelStick = null;
 
-    public DcMotor  RollArm   = null;
+//    public DcMotor  rollArm   = null;
     //    public DcMotor  ballHolder  = null;
 //    public DcMotor  beaconPusher = null;
 ////    public DcMotor  popper      = null;
@@ -50,21 +53,27 @@ public class HardwareTest
         backrightMotor = hwMap.dcMotor.get("backright_drive");
         frontleftMotor.setDirection(DcMotor.Direction.FORWARD);
         frontrightMotor.setDirection(DcMotor.Direction.REVERSE);
-        backleftMotor.setDirection(DcMotor.Direction.FORWARD);
+        backleftMotor.setDirection(DcMotor.Direction.REVERSE);
         backrightMotor.setDirection(DcMotor.Direction.REVERSE);
 
         clawLeft = hwMap.servo.get("claw_left");
         clawRight = hwMap.servo.get("claw_right");
-        linearSlide = hwMap.dcMotor.get("linear_slide");
+//        linearSlide = hwMap.dcMotor.get("linear_slide");
         jewelStick = hwMap.servo.get("jewel_stick");
-        RollArm = hwMap.dcMotor.get("roll_arm");
+//        rollArm = hwMap.dcMotor.get("roll_arm");
 
-        RollArm.setDirection(DcMotor.Direction.FORWARD);
-        linearSlide.setDirection(DcMotor.Direction.REVERSE);
+//        blockCollectorLeft = hwMap.dcMotor.get("block_collector_left");
+//        blockCollectorLeft = hwMap.dcMotor.get("block_collector_right");
+
+//        rollArm.setDirection(DcMotor.Direction.FORWARD);
+//        linearSlide.setDirection(DcMotor.Direction.REVERSE);
 
         clawLeft.setPosition(0.5);
         clawRight.setPosition(0.5);
-        jewelStick.setPosition(0);
+        jewelStick.setPosition(0.01);
+//        blockCollectorLeft.setPower(0);
+//        blockCollectorRight.setPower(0);
+
         //RollArm.setPower(0);
 //
 ////        popper      = hwMap.dcMotor.get("popper");
@@ -75,14 +84,14 @@ public class HardwareTest
 //
 //        // Set all motors to run without encoders.
 //        // May want to use RUN_USING_ENCODERS if encoders are installed.
-//        linearSlide.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-////        ballHolder.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-////        beaconPusher.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-////        popper.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-//        leftMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-//        leftMotor2.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-//        rightMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-//        rightMotor2.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+       // linearSlide.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+//        ballHolder.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        //beaconPusher.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        //popper.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+/*       frontleftMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        frontrightMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);*/
+        //rightMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+       // rightMotor2.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 //
 //
 //        linearSlide.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
