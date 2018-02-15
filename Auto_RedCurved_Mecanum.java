@@ -169,6 +169,8 @@ public class Auto_RedCurved_Mecanum extends LinearOpMode {
             moveBackward(0.5, 1);
             moveLeft(0.5, 1);
             moveRight(0.5, 1);
+            turnLeft(0.5, 1);
+            turnRight(0.5, 1);
             //            if (currentVuMark == RelicRecoveryVuMark.LEFT) {
 //                telemetry.addData("VuMark", "Left");
 //                telemetry.update();
@@ -408,11 +410,11 @@ public class Auto_RedCurved_Mecanum extends LinearOpMode {
     }
 
     private void moveRight(double power, double time) {
-        moveHelper(power, time, Math.atan2(0, power) - Math.PI / 4);
+        moveHelper(power, time, Math.atan2(0, -power) - Math.PI / 4);
     }
 
     private void moveLeft(double power, double time) {
-        moveHelper(power, time, Math.atan2(0, -power) - Math.PI / 4);
+        moveHelper(power, time, Math.atan2(0, power) - Math.PI / 4);
     }
 
     private void moveHelper(double power, double time, double robotAngle) {
@@ -452,10 +454,10 @@ public class Auto_RedCurved_Mecanum extends LinearOpMode {
     }
 
     private void turnLeft(double power, double time) {
-        final double v1 = -power;
-        final double v2 = power;
-        final double v3 = -power;
-        final double v4 = power;
+        final double v1 = power;
+        final double v2 = -power;
+        final double v3 = power;
+        final double v4 = -power;
 
         //Set powers
         robot.frontleftMotor.setPower(v1);
