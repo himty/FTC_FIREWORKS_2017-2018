@@ -2,6 +2,9 @@ package org.firstinspires.ftc.teamcode;
 
 import android.graphics.Bitmap;
 
+import java.util.Collections;
+import java.util.Vector;
+
 /**
  * Hough Transform.
  * Credits to https://rosettacode.org/wiki/Hough_transform#Java
@@ -12,10 +15,15 @@ public class HoughTransform
 {
     ArrayData arrayData;
 
+    private int bmHeight;
+    private int bmWidth;
+
     public HoughTransform(Bitmap bm) {
+        bmHeight = bm.getHeight();
+        bmWidth = bm.getWidth();
         arrayData = getArrayDataFromBitmap(bm);
         int minContrast = 64;
-        ArrayData outputData = houghTransform(arrayData, 640, 480, minContrast);
+        arrayData = houghTransform(arrayData, 640, 480, minContrast);
     }
 
     public static ArrayData houghTransform(ArrayData inputData, int thetaAxisSize, int rAxisSize, int minContrast)
@@ -145,9 +153,71 @@ public class HoughTransform
         return getBitmapFromArrayData(arrayData);
     }
 
-    //Example usage
+    /*
+     * Returns lines calculated after performing the Hough Transform
+     * @param n             the number of lines to find
+     * @param threshold     minimum score of each returned line
+     *
+     * Adaption of David Chatting's algorithm
+     * https://github.com/davidchatting/hough_lines/blob/master/HoughTransform.java
+     */
+    public Vector<HoughLine> getLines(int n, int threshold) {
+        int neighbourhoodSize = 20;
+        int maxTheta = 640;
+
+        // Using maxTheta, work out the step
+        final double thetaStep = Math.PI / maxTheta;
+
+        // Initialise the vector of lines that we'll return
+        Vector<HoughLine> lines = new Vector<HoughLine>(20);
+
+        // Only proceed if the hough array is not empty
+        if (arrayData.width == 0) {
+            return lines;
+        }
+
+        // Search for local peaks above threshold to draw
+        for (int t = 0; t < arrayData.width; t++) {
+            loop:
+            for (int r = neighbourhoodSize; r < arrayData.height - neighbourhoodSize; r++) {
+
+                // Only consider points above threshold
+                if (arrayData.get(t, r) > threshold) {
+
+                    int peak = arrayData.get(t, r);
+
+                    // Check that this peak is indeed the local maxima
+                    for (int dx = -neighbourhoodSize; dx <= neighbourhoodSize; dx++) {
+                        for (int dy = -neighbourhoodSize; dy <= neighbourhoodSize; dy++) {
+                            int dt = t + dx;
+                            int dr = r + dy;
+                            if (dt < 0) dt = dt + maxTheta;
+                            else if (dt >= maxTheta) dt = dt - maxTheta;
+                            if (arrayData.get(dt, dr) > peak) {
+                                // found a bigger point nearby, skip
+                                continue loop;
+                            }
+                        }
+                    }
+
+                    // calculate the true value of theta
+                    double theta_scaled = t * thetaStep;
+//                    double r_scaled = r * bmHeight/480;
+
+                    // add the line to the vector
+                    lines.add(new HoughLine(theta_scaled, r, arrayData.width, arrayData.height, arrayData.get(t, r)));
+                }
+            }
+        }
+        Collections.sort(lines, Collections.reverseOrder());
+        lines.setSize(n);
+
+        return lines;
+    }
+}
+
+//Example usage of this class
 //        ArrayData inputData = getArrayDataFromBitmap(bm);
 //        int minContrast = (args.length >= 4) ? 64 : Integer.parseInt(args[4]);
 //        ArrayData outputData = houghTransform(inputData, Integer.parseInt(args[2]), Integer.parseInt(args[3]), minContrast);
 //        Bitmap bm = getBitmapFromArrayData(outputData);
-}
