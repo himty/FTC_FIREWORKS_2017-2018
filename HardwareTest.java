@@ -53,7 +53,7 @@ public class HardwareTest
         backrightMotor = hwMap.dcMotor.get("backright_drive");
         frontleftMotor.setDirection(DcMotor.Direction.FORWARD);
         frontrightMotor.setDirection(DcMotor.Direction.REVERSE);
-        backleftMotor.setDirection(DcMotor.Direction.REVERSE);
+        backleftMotor.setDirection(DcMotor.Direction.FORWARD);
         backrightMotor.setDirection(DcMotor.Direction.REVERSE);
 
 //        clawLeft = hwMap.servo.get("claw_left");
