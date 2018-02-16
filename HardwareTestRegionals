@@ -1,0 +1,88 @@
+package org.firstinspires.ftc.teamcode;
+
+import com.qualcomm.robotcore.hardware.CompassSensor;
+import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.HardwareMap;
+import com.qualcomm.robotcore.hardware.LightSensor;
+import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.util.ElapsedTime;
+
+public class HardwareTest
+{
+    /* Public OpMode members. */
+    public DcMotor  frontleftMotor   = null;
+    public DcMotor  frontrightMotor  = null;
+    public DcMotor  backleftMotor = null;
+    public DcMotor  backrightMotor = null;
+
+    public DcMotor rampLeft = null;
+    public DcMotor rampRight = null;
+
+    public Servo    lifter = null;
+
+//    public Servo    jewelStick = null;
+
+    /* Local OpMode members. */
+    HardwareMap hwMap  = null;
+    private ElapsedTime period  = new ElapsedTime();
+
+    /* Constructor */
+    public HardwareTest() {
+    }
+
+    /* Initialize standard Hardware interfaces */
+    public void init(HardwareMap ahwMap) {
+//        // save reference to HW Map
+        hwMap = ahwMap;
+
+        // Define and Initialize Motors
+        frontleftMotor   = hwMap.dcMotor.get("frontleft_drive");
+        frontrightMotor  = hwMap.dcMotor.get("frontright_drive");
+        backleftMotor  = hwMap.dcMotor.get("backleft_drive");
+        backrightMotor = hwMap.dcMotor.get("backright_drive");
+        frontleftMotor.setDirection(DcMotor.Direction.FORWARD);
+        frontrightMotor.setDirection(DcMotor.Direction.REVERSE);
+        backleftMotor.setDirection(DcMotor.Direction.FORWARD);
+        backrightMotor.setDirection(DcMotor.Direction.REVERSE);
+
+        lifter = hwMap.servo.get("lifter");
+
+//        jewelStick = hwMap.servo.get("jewel_stick");
+
+        rampLeft = hwMap.dcMotor.get("ramp_left");
+        rampRight = hwMap.dcMotor.get("ramp_right");
+
+        rampLeft.setDirection(DcMotor.Direction.REVERSE);
+
+        //jewelStick.setPosition(0.01);
+        lifter.setPosition(0.5);
+
+
+    }
+
+    /***
+     *
+     * waitForTick implements a periodic delay. However, this acts like a metronome with a regular
+     * periodic tick.  This is used to compensate for varying processing times for each cycle.
+     * The function looks at the elapsed cycle time, and sleeps for the remaining time interval.
+     *
+     * @param periodMs  Length of wait cycle in mSec.
+     */
+    public void waitForTick(long periodMs) {
+
+        long  remaining = periodMs - (long)period.milliseconds();
+
+        // sleep for the remaining portion of the regular cycle period.
+        if (remaining > 0) {
+            try {
+                Thread.sleep(remaining);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
+
+        // Reset the cycle clock for the next pass.
+        period.reset();
+    }
+}
