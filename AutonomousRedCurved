@@ -96,7 +96,7 @@ public class AutonomousRedCurved extends LinearOpMode {
         //Sense the placement of the jewels,
         //knock off the correct jewel,
         //move to the pictograph, and sense it
-//        doJewelSensing();
+        doJewelSensing();
         //moveToCrypto();
 
         /*
@@ -159,9 +159,9 @@ public class AutonomousRedCurved extends LinearOpMode {
                 telemetry.update();
 
                 //TODO UNTESTED
-                moveForward(0.5, 1.8);
+                moveForward(0.5, 1.5);
                 moveRight(0.5, 0.9);
-                turnLeft(0.5, 1.8); //180 degrees
+                turnLeft(0.5, 1.5); //180 degrees
 
                 dispenseBlock();
 
@@ -169,18 +169,18 @@ public class AutonomousRedCurved extends LinearOpMode {
             else if (currentVuMark == RelicRecoveryVuMark.RIGHT) {
                 telemetry.addData("VuMark", "RIGHT");
                 telemetry.update();
-                moveForward(0.5, 1.8);
+                moveForward(0.5, 1.5);
                 moveRight(0.5, 0.9);
-                turnLeft(0.5, 1.8); //180 degrees
+                turnLeft(0.5, 1.5); //180 degrees
 
                 dispenseBlock();
             }
             else {
                 telemetry.addData("VuMark", "Center");
                 telemetry.update();
-                moveForward(0.5, 1.8);
+                moveForward(0.5, 1.5);
                 moveRight(0.5, 0.9);
-                turnLeft(0.5, 1.8); //180 degrees
+                turnLeft(0.5, 1.5); //180 degrees
 
                 dispenseBlock();
             }
@@ -236,27 +236,27 @@ public class AutonomousRedCurved extends LinearOpMode {
                 telemetry.addData("VuMark", "Left");
                 telemetry.update();
                 //robot is facing away from the cryptobox
-                moveBackward(0.5, 1.8);
+                moveBackward(0.5, 1.5);
                 moveRight(0.5, 0.9);
-                turnLeft(0.5, 1.8); //180 degrees
+                turnLeft(0.5, 1.5); //180 degrees
 
                 dispenseBlock();
             }
             else if (currentVuMark == RelicRecoveryVuMark.RIGHT) {
                 telemetry.addData("VuMark", "RIGHT");
                 telemetry.update();
-                moveBackward(0.5, 1.8);
+                moveBackward(0.5, 1.5);
                 moveRight(0.5, 0.9);
-                turnLeft(0.5, 1.8); //180 degrees
+                turnLeft(0.5, 1.5); //180 degrees
 
                 dispenseBlock();
             }
             else {
                 telemetry.addData("VuMark", "Center");
                 telemetry.update();
-                moveBackward(0.5, 1.8);
+                moveBackward(0.5, 1.5);
                 moveRight(0.5, 0.9);
-                turnLeft(0.5, 1.8); //180 degrees
+                turnLeft(0.5, 1.5); //180 degrees
 
                 dispenseBlock();
             }
@@ -318,14 +318,12 @@ public class AutonomousRedCurved extends LinearOpMode {
             double certaintyForBlue = (blueAvgLeft - blueAvgRight) - (redAvgLeft - redAvgRight);
 
             //Robot will move for 0.6 seconds in a direction determined in the following if/else block
-            double movementTime = 0.6;
+            double movementTime = 0.8;
             double drivePower = 0;
 
-
-            if (certaintyForRed > 50 || certaintyForRed < -50) {
+            if (certaintyForRed > 0 || certaintyForRed < 0) {
                 //Put the jewel stick down. Get ready to push a jewel off the stand
-//            robot.jewelStick.setPower(1);
-                //robot.jewelStick.setDirection();
+                lowerJewelStick();
 
                 runtime.reset();
                 while (runtime.seconds() < 1.5) {
@@ -354,7 +352,6 @@ public class AutonomousRedCurved extends LinearOpMode {
                     }
                 }
 
-
                 //Knock off the jewel
                 if (drivePower > 0) {
                     moveForward(drivePower, movementTime);
@@ -369,14 +366,8 @@ public class AutonomousRedCurved extends LinearOpMode {
                 }
 
                 //Lift the jewel stick to its starting position
-//                robot.jewelStick.setPosition(JEWEL_STICK_MIN);
-//                robot.jewelStick.setPosition(0.5);
-//            robot.jewelStick.setPower(-1);
-                //robot.jewelStick.setDirection();
-
-                //robot.jewelStick.setDirection(JEWEL_STICK_MAX);
+                raiseJewelStick();
             }
-
 
             //Go to the pictograph if the robot has to
             //and sense the pictograph.
@@ -384,10 +375,14 @@ public class AutonomousRedCurved extends LinearOpMode {
                 doVuMark();
             } else {
 //               move(drivePower, drivePower, movementTime * 2);
-                if (drivePower > 0)
-                    moveBackward(drivePower, movementTime * 2);
-                else if (drivePower < 0)
-                    moveForward(-drivePower, movementTime * 2);
+                if (drivePower > 0) {
+                    //                    moveBackward(drivePower, movementTime * 2);
+                    moveBackward(drivePower, movementTime);
+                }
+                else if (drivePower < 0) {
+//                    moveForward(-drivePower, movementTime * 2);
+                    moveForward(-drivePower, movementTime);
+                }
                 else {
                     //drivePower == 0
                     //the robot didn't move or knock off a jewel
@@ -403,12 +398,6 @@ public class AutonomousRedCurved extends LinearOpMode {
             }
         }
     }
-
-//            private void moveToCrypto() {
-//                moveBackward(0.5, 1);
-//        }
-
-
 
     /**
      * Checks if a VuMark (pictograph) is visible and store its value in currentVuMark
@@ -603,11 +592,29 @@ public class AutonomousRedCurved extends LinearOpMode {
             idle();
         }
 
-        moveForward(0.5, 0.4);
+        moveForward(0.5, 0.8);
 
         robot.rampLeft.setPower(0);
         robot.rampLeft.setPower(0);
 
-        moveBackward(0.5, 0.2);
+        moveBackward(0.5, 0.5);
+    }
+
+    private void lowerJewelStick() {
+        robot.jewelStick.setPower(-0.2);
+        runtime.reset();
+        while (runtime.seconds() < 1) {
+            idle();
+        }
+        robot.jewelStick.setPower(0);
+    }
+
+    private void raiseJewelStick() {
+        robot.jewelStick.setPower(0.2);
+        runtime.reset();
+        while (runtime.seconds() < 1.1) {
+            idle();
+        }
+        robot.jewelStick.setPower(0);
     }
 }
