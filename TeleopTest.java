@@ -54,6 +54,7 @@ public class TeleopTest extends LinearOpMode {
         // run until the end of the match (driver presses STOP)
         while (opModeIsActive()) {
             doDriveTrain();
+            doLifter();
 //            doClamping();
 //            doLinearSlide();
 //            RollOutArm();
@@ -63,7 +64,12 @@ public class TeleopTest extends LinearOpMode {
             telemetry.addData("hi", "hello");
 //            telemetry.addData("servoleft", robot.clawLeft.getPosition());
 //            telemetry.addData("servoright", robot.clawRight.getPosition());
-//            telemetry.addData("Jewel Stick", robot.jewelStick.getPosition());
+            telemetry.addData("Jewel Stick", robot.jewelStick.getPower());
+            telemetry.addData("JewelStick Controller", robot.jewelStick.getController().getDeviceName());
+            telemetry.addData("JewelStick motor type", robot.jewelStick.getMotorType().toString());
+            telemetry.addData("JewelStick Port number", robot.jewelStick.getPortNumber());
+            telemetry.addData("JewelStick mode", robot.jewelStick.getMode().toString());
+            telemetry.addData("JewelStick current position", robot.jewelStick.getCurrentPosition());
 
             telemetry.addData("frontLeft", robot.frontleftMotor.getPower());
             telemetry.addData("frontRight", robot.frontrightMotor.getPower());
@@ -87,11 +93,18 @@ public class TeleopTest extends LinearOpMode {
         double r = Math.hypot(gamepad1.left_stick_x, gamepad1.left_stick_y);
         double robotAngle = Math.atan2(gamepad1.left_stick_y, gamepad1.left_stick_x) - Math.PI / 4;
         //Turning is configured on separate joystick
-        double rightX = gamepad1.right_stick_x;
-        final double v1 = r * Math.cos(robotAngle) + rightX;
-        final double v2 = r * Math.sin(robotAngle) - rightX;
-        final double v3 = r * Math.sin(robotAngle) + rightX;
-        final double v4 = r * Math.cos(robotAngle) - rightX;
+        double rightX = gamepad1.right_stick_x * 0.5;
+        double v1 = r * Math.cos(robotAngle) - rightX;
+        double v2 = r * Math.sin(robotAngle) + rightX;
+        double v3 = r * Math.sin(robotAngle) - rightX;
+        double v4 = r * Math.cos(robotAngle) + rightX;
+
+        if (!gamepad1.right_bumper){
+            v1 *= 0.6;
+            v2 *= 0.6;
+            v3 *= 0.6;
+            v4 *= 0.6;
+        }
 
 //        targetLeftPower = (gamepad1.right_stick_y - gamepad1.right_stick_x * 2);
 //        targetRightPower = (gamepad1.right_stick_y + gamepad1.right_stick_x * 2);
@@ -176,21 +189,36 @@ public class TeleopTest extends LinearOpMode {
 //            robot.jewelStick.setPosition(Math.max(currPosition - 0.15, JEWEL_STICK_MIN));
 //        }
 //    }
+
+    private void doLifter() {
+        robot.lifter.setPower(gamepad2.right_stick_y * 0.7);
+    }
+
     private void doRampCollector() {
-        robot.rampLeft.setPower(gamepad2.left_stick_y);
-        robot.rampRight.setPower(gamepad2.left_stick_y);
+//        if (gamepad2.left_stick_y >10) {
+            robot.rampLeft.setPower(gamepad2.left_stick_y);
+            robot.rampRight.setPower(gamepad2.left_stick_y);
+//        }
+//        else {
+//            robot.rampLeft.setPower(-1);
+//            robot.rampRight.setPower(-1);
+//        }
+
     }
 
     private void doJewelHitter() {
-//        //double currPosition = robot.jewelStick.getPosition();
-//        if (gamepad2.dpad_down) {
-//            //make jewelstick go down
-//            robot.jewelStick.setPosition(JEWEL_STICK_MAX);
-//
-//        } else if (gamepad2.dpad_up) {
-//            //make jewelstick go up
-//            robot.jewelStick.setPosition(JEWEL_STICK_MIN);
-//        }
+        //        //double currPosition = robot.jewelStick.getPosition();
+        if (gamepad2.dpad_down) {
+            //make jewelstick go down
+            robot.jewelStick.setPower(-0.5);
+
+        } else if (gamepad2.dpad_up) {
+            //make jewelstick go up
+            robot.jewelStick.setPower(0.5);
+        }
+        else {
+            robot.jewelStick.setPower(0);
+        }
 //        else {
 //            //Make jewel stick hang loose if there is nothing to do
 //            robot.jewelStick.setPosition(0.01);
