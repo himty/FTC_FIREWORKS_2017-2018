@@ -20,8 +20,6 @@ import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackable;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackableDefaultListener;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackables;
 
-//import org.firstinspires.ftc.robotcontroller.external.samples.HardwareTest;
-
 @Autonomous
 public class AutonomousBlueCurved extends LinearOpMode {
     HardwareTest robot = new HardwareTest();
@@ -35,7 +33,7 @@ public class AutonomousBlueCurved extends LinearOpMode {
     //Max is the bottom position for the jewel stick
     //Min is the upper position for the jewel stick
     //To make the stick move farther from the robot, raise this value
-    final double JEWEL_STICK_MAX = 0.56;
+//    final double JEWEL_STICK_MAX = 0.56;
 //    final double JEWEL_STICK_MIN = 0.07;
 
     //Multiplier to make the forward drivetrain
@@ -58,7 +56,7 @@ public class AutonomousBlueCurved extends LinearOpMode {
          */
         robot.init(hardwareMap);
         initVuforia();
-        //robot.accelSensor = new Accelerometer(hardwareMap);
+//        robot.accelSensor = new Accelerometer(hardwareMap);
 
         initVuMark();
 
@@ -197,10 +195,6 @@ public class AutonomousBlueCurved extends LinearOpMode {
                 turnLeft(0.5, 0.9);
 
                 dispenseBlock();
-//                moveForward(0.3, 2);
-//                turnRight(0.3, 0.5);
-//                turnLeft(0.5, 0.5);
-//                moveForward(0.5, 0.5);
             }
             else if (currentVuMark == RelicRecoveryVuMark.RIGHT) {
                 telemetry.addData("VuMark", "RIGHT");
@@ -210,10 +204,6 @@ public class AutonomousBlueCurved extends LinearOpMode {
                 turnLeft(0.5, 0.9);
 
                 dispenseBlock();
-//                moveForward(0.3, 2);
-//                turnRight(0.3, 0.5);
-//                turnLeft(0.5, 0.5);
-//                moveForward(0.5, 0.5);
             }
             else {
                 telemetry.addData("VuMark", "Center");
@@ -223,10 +213,6 @@ public class AutonomousBlueCurved extends LinearOpMode {
                 turnLeft(0.5, 0.9);
 
                 dispenseBlock();
-//                moveForward(0.3, 2);
-//                turnRight(0.3, 0.5);
-//                turnLeft(0.5, 0.5);
-//                moveForward(0.5, 0.5);
             }
         }
 
@@ -235,6 +221,7 @@ public class AutonomousBlueCurved extends LinearOpMode {
             if (currentVuMark == RelicRecoveryVuMark.LEFT) {
                 telemetry.addData("VuMark", "Left");
                 telemetry.update();
+
                 //robot is facing away from the cryptobox
                 moveBackward(0.5, 1.5);
                 moveRight(0.5, 0.9);
@@ -245,6 +232,7 @@ public class AutonomousBlueCurved extends LinearOpMode {
             else if (currentVuMark == RelicRecoveryVuMark.RIGHT) {
                 telemetry.addData("VuMark", "RIGHT");
                 telemetry.update();
+
                 moveBackward(0.5, 1.5);
                 moveRight(0.5, 0.9);
                 turnLeft(0.5, 1.5); //180 degrees
@@ -254,6 +242,7 @@ public class AutonomousBlueCurved extends LinearOpMode {
             else {
                 telemetry.addData("VuMark", "Center");
                 telemetry.update();
+
                 moveBackward(0.5, 1.5);
                 moveRight(0.5, 0.9);
                 turnLeft(0.5, 1.5); //180 degrees
@@ -261,9 +250,6 @@ public class AutonomousBlueCurved extends LinearOpMode {
                 dispenseBlock();
             }
         }
-
-        //Lower the block, resetting the robot before
-        //tele-op mode.
     }
 
     /**
@@ -412,50 +398,10 @@ public class AutonomousBlueCurved extends LinearOpMode {
          */
         RelicRecoveryVuMark vuMark = RelicRecoveryVuMark.from(relicTemplate);
         if (vuMark != RelicRecoveryVuMark.UNKNOWN) {
-            //some VuMark is visible
-            //doVuMark();
+            // A VuMark is visible
             currentVuMark = vuMark;
 
             // TODO: Make the robot go parallel to the wall based on pose transformations
-
-            /* For fun, we also exhibit the navigational pose. In the Relic Recovery game,
-             * it is perhaps unlikely that you will actually need to act on this pose information, but
-             * we illustrate it nevertheless, for completeness. */
-            OpenGLMatrix pose = ((VuforiaTrackableDefaultListener)relicTemplate.getListener()).getPose();
-
-            /* We further illustrate how to decompose the pose into useful rotational and
-             * translational components */
-            if (pose != null) {
-                //we can fix the robot's path with this
-                VectorF trans = pose.getTranslation();
-                Orientation rot = Orientation.getOrientation(pose, AxesReference.EXTRINSIC, AxesOrder.XYZ, AngleUnit.DEGREES);
-
-                // Extract the X, Y, and Z components of the offset of the target relative to the robot
-                double tX = trans.get(0);
-                double tY = trans.get(1);
-                double tZ = trans.get(2);
-
-                // Extract the rotational components of the target relative to the robot
-                double rX = rot.firstAngle;
-                double rY = rot.secondAngle;
-                double rZ = rot.thirdAngle;
-
-                telemetry.addData("tX", trans.get(0));
-                telemetry.addData("tY", trans.get(1));
-                telemetry.addData("tZ", trans.get(2));
-                telemetry.addData("rX", rot.firstAngle);
-                telemetry.addData("rY", rot.secondAngle);
-                telemetry.addData("rZ", rot.thirdAngle);
-
-                telemetry.addData("VuMark", currentVuMark);
-
-                if (pose != null) {
-                    VectorF translation = pose.getTranslation();
-                    telemetry.addData("Translation", translation);
-                    double radiansToTurn = Math.toDegrees(Math.atan2(translation.get(1), translation.get(2)));
-                    telemetry.addData("Degrees", radiansToTurn);
-                }
-            }
         }
         else {
             telemetry.addData("VuMark", "not visible");
@@ -468,10 +414,10 @@ public class AutonomousBlueCurved extends LinearOpMode {
      * Initializes the Vuforia engine
      */
     private void initVuforia() {
-        //Uncomment this to show what the camera sees
+        //Uncomment this to show what the camera sees on the phone screen (drains battery)
         VuforiaLocalizer.Parameters params = new VuforiaLocalizer.Parameters(R.id.cameraMonitorViewId);
 
-        //uncomment this to not show what the camera sees (save battery)
+        //Uncomment this to NOT show what the camera sees on the phone screen (save battery)
 //        VuforiaLocalizer.Parameters params = new VuforiaLocalizer.Parameters();
 
         params.cameraDirection = VuforiaLocalizer.CameraDirection.BACK;
@@ -519,9 +465,9 @@ public class AutonomousBlueCurved extends LinearOpMode {
     private void moveHelper(double power, double time, double robotAngle) {
         //Defining which buttons on joystick corresponds to motor left and right power
         //Calculate left and right motor drivetrain power
-        /*TELEOP MODE USAGE
-//        double r = Math.hypot(gamepad1.left_stick_x, gamepad1.left_stick_y);
-//        double robotAngle = Math.atan2(gamepad1.left_stick_y, gamepad1.left_stick_x) - Math.PI / 4;
+        /* TELEOP MODE USAGE
+         * double r = Math.hypot(gamepad1.left_stick_x, gamepad1.left_stick_y);
+         * double robotAngle = Math.atan2(gamepad1.left_stick_y, gamepad1.left_stick_x) - Math.PI / 4;
         */
         double r = power * DIRECTION;
 
@@ -551,6 +497,7 @@ public class AutonomousBlueCurved extends LinearOpMode {
             idle();
         }
     }
+
     //TURNING, NOT SIDEWAYS; SIDEWAYS IS MOVELEFT
     private void turnLeft(double power, double time) {
         final double v1 = power;
@@ -595,7 +542,7 @@ public class AutonomousBlueCurved extends LinearOpMode {
         moveForward(0.5, 0.8);
 
         robot.rampLeft.setPower(0);
-        robot.rampLeft.setPower(0);
+        robot.rampRight.setPower(0);
 
         moveBackward(0.5, 0.5);
     }
