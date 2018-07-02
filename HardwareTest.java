@@ -270,38 +270,7 @@ public class HardwareTest
 //////        ballHolder = hwMap.dcMotor.get("ball_holder");
 //////        beaconPusher = hwMap.dcMotor.get("beacon_pusher");
 //////        beaconPusher.setDirection(DcMotorSimple.Direction.REVERSE);
-////
-////        // Set all motors to run without encoders.
-////        // May want to use RUN_USING_ENCODERS if encoders are installed.
-//        // linearSlide.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-////        ballHolder.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-//        //beaconPusher.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-//        //popper.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-///*       frontleftMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-//        frontrightMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);*/
-//        //rightMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-//        // rightMotor2.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-////
-////
-////        linearSlide.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-//////        ballHolder.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-//////        beaconPusher.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-//////        popper.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-////        leftMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-////        leftMotor2.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-////        rightMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-////        rightMotor2.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-////
-////        leftMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-////        leftMotor2.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-////        rightMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-////        rightMotor2.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-//        //linearSlide.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-//////        ballHolder.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-//////        beaconPusher.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-//////        popper.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-////
-////
+
 ////
 ////        // Set all motors to zero power
 ////        leftMotor.setPower(0);
